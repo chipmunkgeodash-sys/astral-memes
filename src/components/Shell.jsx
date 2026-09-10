@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
-  Home, Rss, Trophy, Vote, Store, Gamepad2, MessageCircle,
-  Shield, LogOut, Search, Coins, Menu, Sun, Moon, Sparkles
+  Home, Rss, Trophy, Vote, Store, Gamepad2, MessageCircle, Hash,
+  Shield, LogOut, Search, Coins, Menu, Sun, Moon, Settings, ShieldCheck, FileText
 } from 'lucide-react';
 import { useSession } from '../lib/session';
 import { useTheme } from '../lib/theme';
@@ -10,14 +10,15 @@ import Avatar from './Avatar';
 const NAV = [
   { to: '/', label: 'Home', icon: Home },
   { to: '/feed', label: 'Feed', icon: Rss },
+  { to: '/chat', label: 'Global chat', icon: Hash },
+  { to: '/messages', label: 'Messages', icon: MessageCircle },
   { to: '/challenges', label: 'Challenges', icon: Trophy },
-  { to: '/polls', label: 'Polls', icon: Vote },
-  { to: '/store', label: 'Store', icon: Store },
   { to: '/games', label: 'Games', icon: Gamepad2 },
-  { to: '/messages', label: 'Messages', icon: MessageCircle }
+  { to: '/polls', label: 'Polls', icon: Vote },
+  { to: '/store', label: 'Store', icon: Store }
 ];
 
-const MOBILE_NAV = [NAV[0], NAV[1], NAV[2], NAV[5], NAV[6]];
+const MOBILE_NAV = [NAV[0], NAV[2], NAV[4], NAV[5], NAV[1]];
 
 export default function Shell({ router, children }) {
   const { profile, balance, can, isOwner, signOut } = useSession();
@@ -32,8 +33,8 @@ export default function Shell({ router, children }) {
     <div className="app">
       <aside className={open ? 'sidebar open' : 'sidebar'}>
         <button className="brand" onClick={() => go('/')}>
-          <span className="brand-mark"><Sparkles size={16} /></span>
-          Astral
+          <span className="brand-mark"><Moon size={16} /></span>
+          <span className="brand-name">ASTRAL</span>
         </button>
 
         <nav>
@@ -43,7 +44,6 @@ export default function Shell({ router, children }) {
               className="nav-item"
               aria-current={active(to) ? 'page' : undefined}
               onClick={() => go(to)}
-              style={{ width: '100%' }}
             >
               <Icon size={17} />
               {label}
@@ -54,10 +54,19 @@ export default function Shell({ router, children }) {
               className="nav-item"
               aria-current={active('/admin') ? 'page' : undefined}
               onClick={() => go('/admin')}
-              style={{ width: '100%' }}
             >
               <Shield size={17} />
               Admin
+            </button>
+          )}
+          {isOwner && (
+            <button
+              className="nav-item nav-owner"
+              aria-current={active('/owner') ? 'page' : undefined}
+              onClick={() => go('/owner')}
+            >
+              <ShieldCheck size={17} />
+              Owner panel
             </button>
           )}
         </nav>
@@ -70,7 +79,21 @@ export default function Shell({ router, children }) {
               <small>{isOwner ? 'Owner' : 'Member'}</small>
             </span>
           </button>
-          <button className="nav-item" onClick={signOut} style={{ width: '100%' }}>
+          <button
+            className="nav-item"
+            aria-current={active('/settings') ? 'page' : undefined}
+            onClick={() => go('/settings')}
+          >
+            <Settings size={17} /> Settings
+          </button>
+          <button
+            className="nav-item"
+            aria-current={active('/terms') ? 'page' : undefined}
+            onClick={() => go('/terms')}
+          >
+            <FileText size={17} /> Terms
+          </button>
+          <button className="nav-item" onClick={signOut}>
             <LogOut size={17} /> Sign out
           </button>
         </div>
@@ -105,7 +128,7 @@ export default function Shell({ router, children }) {
             >
               {isDark ? <Sun size={17} /> : <Moon size={17} />}
             </button>
-            <button className="btn btn-ghost btn-icon" onClick={() => go('/profile')} aria-label="Profile">
+            <button className="btn btn-ghost btn-icon" onClick={() => go('/settings')} aria-label="Settings">
               <Avatar profile={profile} size={26} />
             </button>
           </div>

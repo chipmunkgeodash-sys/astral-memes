@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Trophy, Crown, Plus, RefreshCw, Medal } from 'lucide-react';
+import { Trophy, Crown, Plus, RefreshCw, Medal, Trash2 } from 'lucide-react';
 import {
   collection, onSnapshot, query, where, orderBy, addDoc, setDoc, doc,
-  serverTimestamp, increment, updateDoc
+  serverTimestamp, increment, updateDoc, deleteDoc
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { COL, LIMITS } from '../lib/schema';
 import { useSession } from '../lib/session';
 import { PageHead, Empty, Loader, Modal, Field, ErrorNote, Tabs, UserLink } from '../components/ui';
 import Avatar from '../components/Avatar';
+import Arcade from '../components/Arcade';
 
 export default function ChallengesPage() {
   const { accountId, profile, isOwner } = useSession();
@@ -57,7 +58,7 @@ export default function ChallengesPage() {
         challengeId: selected.id,
         uid: accountId,
         displayName: profile?.displayName || 'Astral member',
-        points: selected.forever ? LIMITS.foreverRefillPoints : 0,
+        points: LIMITS.foreverRefillPoints,
         joinedAt: serverTimestamp()
       }, { merge: true });
     } catch (err) { setError(err.message); } finally { setBusy(''); }
@@ -69,6 +70,18 @@ export default function ChallengesPage() {
     try {
       await updateDoc(doc(db, COL.challengeEntries, mine.id), {
         points: increment(LIMITS.foreverRefillPoints)
+      });
+    } catch (err) { setError(err.message); } finally { setBusy(''); }
+  };
+
+  // Every bet resolves to a net change on the player's own entry.
+  const settle = async (delta) => {
+    if (!mine || !delta) return;
+    setBusy('settle'); setError('');
+    try {
+      await updateDoc(doc(db, COL.challengeEntries, mine.id), {
+        points: increment(delta),
+        updatedAt: serverTimestamp()
       });
     } catch (err) { setError(err.message); } finally { setBusy(''); }
   };
@@ -115,9 +128,19 @@ export default function ChallengesPage() {
                     <span className="dot" /> {statusLabel(selected)}
                   </span>
                 </div>
-                <p className="faint" style={{ marginTop: 10 }}>
-                  {selected.forever ? 'Always open · Never ends' : formatRange(selected)}
-                </p>
+                <div className="spread" style={{ marginTop: 10 }}>
+                  <span className="faint">
+                    {selected.forever ? 'Always open · Never ends' : formatRange(selected)}
+                  </span>
+                  {isOwner && (
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={() => deleteDoc(doc(db, COL.challenges, selected.id)).catch((e) => setError(e.message))}
+                    >
+                      <Trash2 size={13} /> Delete
+                    </button>
+                  )}
+                </div>
               </div>
 
               {winner && (
@@ -142,24 +165,33 @@ export default function ChallengesPage() {
 
               {!ended && !mine && (
                 <div className="card spread">
-                  <span className="muted">
-                    {selected.forever ? 'Join the Forever Challenge to claim a spot.' : 'Join the challenge to take part.'}
-                  </span>
+                  <span className="muted">Join to get {LIMITS.foreverRefillPoints} points and start playing.</span>
                   <button className="btn btn-primary" onClick={join} disabled={busy === 'join'}>
                     {busy === 'join' ? 'Joining…' : 'Join challenge'}
                   </button>
                 </div>
               )}
 
-              {!ended && mine && selected.forever && (mine.points || 0) === 0 && (
-                <div className="card spread">
-                  <span className="muted">
-                    The Forever Challenge never locks you out. Take a free 100-point refill.
-                  </span>
-                  <button className="btn btn-primary" onClick={refill} disabled={busy === 'refill'}>
-                    <RefreshCw size={15} /> {busy === 'refill' ? 'Refilling…' : 'Refill'}
-                  </button>
-                </div>
+              {!ended && mine && (
+                <>
+                  <Arcade
+                    points={mine.points || 0}
+                    only={selected.game || 'all'}
+                    settle={settle}
+                    busy={busy === 'settle'}
+                  />
+
+                  {(mine.points || 0) < 1 && selected.forever && (
+                    <div className="card spread">
+                      <span className="muted">
+                        The Forever Challenge never locks you out. Take a free {LIMITS.foreverRefillPoints}-point refill.
+                      </span>
+                      <button className="btn btn-primary" onClick={refill} disabled={busy === 'refill'}>
+                        <RefreshCw size={15} /> {busy === 'refill' ? 'Refilling…' : 'Refill'}
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
 
               <section>
@@ -195,6 +227,7 @@ function ChallengeComposer({ onClose }) {
   const [description, setDescription] = useState('');
   const [days, setDays] = useState(7);
   const [forever, setForever] = useState(false);
+  const [game, setGame] = useState('all');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -210,6 +243,7 @@ function ChallengeComposer({ onClose }) {
         title: title.trim(),
         description: description.trim(),
         forever,
+        game,
         startsAt,
         endsAt: forever ? null : new Date(startsAt.getTime() + days * 86400000),
         createdAt: serverTimestamp()
@@ -234,6 +268,14 @@ function ChallengeComposer({ onClose }) {
       <Field label="Title"><input value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
       <Field label="Description" hint="Tell everyone what this challenge is about.">
         <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+      </Field>
+      <Field label="Game" hint="Which game players bet their points on.">
+        <select value={game} onChange={(e) => setGame(e.target.value)}>
+          <option value="all">All three</option>
+          <option value="blackjack">Blackjack only</option>
+          <option value="mines">Mines only</option>
+          <option value="poker">Poker Draw only</option>
+        </select>
       </Field>
       <label className="row">
         <input type="checkbox" checked={forever} onChange={(e) => setForever(e.target.checked)} />

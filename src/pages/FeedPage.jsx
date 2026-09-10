@@ -8,6 +8,7 @@ import { db } from '../firebase';
 import { COL } from '../lib/schema';
 import { useSession } from '../lib/session';
 import { PageHead, Empty, Loader, ErrorNote, Field, UserLink } from '../components/ui';
+import { deleteWithLog, postRef } from '../lib/audit';
 import Avatar from '../components/Avatar';
 
 export default function FeedPage() {
@@ -107,7 +108,7 @@ export default function FeedPage() {
                     {(p.likes || []).length || 'Like'}
                   </button>
                   {canDelete && (
-                    <button className="btn btn-danger btn-sm" onClick={() => deleteDoc(doc(db, COL.posts, p.id))}>
+                    <button className="btn btn-danger btn-sm" onClick={() => deleteWithLog('post', postRef(p.id), p, { id: accountId, name: profile?.displayName }).catch((e) => setError(e.message))}>
                       <Trash2 size={14} /> Delete
                     </button>
                   )}

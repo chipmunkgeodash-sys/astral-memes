@@ -15,9 +15,18 @@ export const COL = {
   announcements: 'announcements',
   storeItems: 'storeItems',
   redemptions: 'redemptions',
+  groups: 'groups',
+  deletionLog: 'deletionLog',
   // paidContent/games.key holds the base64 AES-GCM key for the game library.
   paidContent: 'paidContent'
 };
+
+// Thread ids. A DM is both account ids sorted so either side derives the same
+// key; a group thread carries its group id, which the rules use to check
+// membership.
+export const LOUNGE_THREAD = 'the-lounge';
+export const dmThread = (a, b) => [a, b].sort().join('__');
+export const groupThread = (groupId) => `group_${groupId}`;
 
 // Auth uses synthetic addresses on this domain; the real one per account is
 // stored as `authEmail` on its usernames document.

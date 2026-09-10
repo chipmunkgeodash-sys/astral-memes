@@ -762,6 +762,128 @@ body::before {
 .user-link:hover { color: var(--accent); border-bottom-color: color-mix(in srgb, var(--accent) 45%, transparent); }
 .bubble.mine .user-link:hover { color: #fff; }
 
+/* ============================================================================
+   Futuristic layer 2 — particles, panels, arcade, chat, legal
+   ========================================================================= */
+
+.particles {
+  position: fixed; inset: 0; z-index: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  opacity: .55;
+}
+.app, .auth, .state { position: relative; z-index: 1; }
+
+/* Panels float over the field rather than sitting flat on it. */
+.card, .tile, .row-item, .dm-main, .empty, .modal, .game-tile {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+}
+.sidebar { background: color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter: blur(12px); }
+
+/* Section headings get a hairline rule that fades out. */
+.page-head h1 { position: relative; display: inline-block; }
+.page-head h1::after {
+  content: ""; position: absolute; left: 0; right: -30%; bottom: -7px; height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  border-radius: 2px;
+}
+
+.brand-name { letter-spacing: .22em; font-weight: 700; font-size: .92rem; }
+.brand-mark { box-shadow: var(--glow), 0 0 18px color-mix(in srgb, var(--accent) 40%, transparent); }
+.nav-owner { color: var(--accent); }
+
+.eyebrow { color: var(--accent); opacity: .85; }
+
+/* ------------------------------------------------------------------ chat */
+
+.chat-single .dm-main { height: calc(100vh - var(--topbar-h) - 150px); min-height: 420px; }
+.dm-group { background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); }
+.dm-locked { display: flex; align-items: center; gap: 10px; padding: 8px 10px; }
+.dm-blank { display: grid; place-items: center; }
+.dm-blank .empty { border: 0; background: none; }
+
+/* ---------------------------------------------------------------- arcade */
+
+.arcade { display: flex; flex-direction: column; gap: 14px; }
+
+.felt {
+  display: flex; flex-direction: column; gap: 16px;
+  padding: 18px;
+  border-radius: var(--r);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+  background:
+    radial-gradient(40rem 20rem at 50% -20%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%),
+    var(--surface-2);
+}
+.hand-row { display: flex; flex-direction: column; gap: 7px; }
+.hand-label { font-size: .72rem; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; color: var(--text-faint); }
+.hand { display: flex; gap: 7px; flex-wrap: wrap; min-height: 62px; }
+
+.pcard {
+  width: 44px; height: 62px; flex: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  border-radius: 7px;
+  background: #fff; color: #16161d;
+  border: 1px solid #cfcfe0;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25);
+  font-weight: 700;
+
+  padding: 0;
+}
+.pcard b { font-size: .95rem; line-height: 1; }
+.pcard i { font-style: normal; font-size: .9rem; line-height: 1; }
+.pcard-red { color: #d23f3f; }
+.pcard-back {
+  background: repeating-linear-gradient(45deg, var(--accent) 0 5px, color-mix(in srgb, var(--accent) 55%, #000) 5px 10px);
+  border-color: color-mix(in srgb, var(--accent) 60%, #000);
+}
+.pcard-empty { background: transparent; border: 1px dashed var(--border-strong); box-shadow: none; }
+
+.bet { display: flex; flex-direction: column; gap: 6px; }
+.bet-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.bet-input { width: 110px; text-align: center; font-variant-numeric: tabular-nums; font-weight: 650; }
+
+.mines { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 260px; }
+.tile-mine {
+  aspect-ratio: 1; border-radius: var(--r-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  display: grid; place-items: center;
+  transition: transform .1s, background .14s, border-color .14s, box-shadow .14s;
+}
+.tile-mine:not(:disabled):hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: var(--glow); }
+.tile-mine.safe { background: color-mix(in srgb, var(--success) 22%, transparent); border-color: var(--success); color: var(--success); }
+.tile-mine.boom { background: color-mix(in srgb, var(--danger) 24%, transparent); border-color: var(--danger); color: var(--danger); }
+
+.result { font-size: .92rem; font-weight: 600; padding: 9px 12px; border-radius: var(--r-sm); }
+.result-idle { background: var(--surface-2); color: var(--text-muted); }
+.result-win { background: color-mix(in srgb, var(--success) 16%, transparent); color: var(--success); }
+.result-lose { background: var(--danger-soft); color: var(--danger); }
+
+/* ----------------------------------------------------------------- legal */
+
+.legal h2 { font-size: 1rem; margin: 22px 0 6px; }
+.legal h2:first-of-type { margin-top: 16px; }
+.legal p { color: var(--text-muted); margin-bottom: 8px; }
+.legal ul { color: var(--text-muted); margin: 0 0 10px; padding-left: 20px; }
+.legal li { margin-bottom: 5px; }
+.legal strong { color: var(--text); }
+
+.deleted-text {
+  margin: 0; padding: 10px 13px;
+  border-left: 3px solid var(--accent);
+  background: var(--surface-2);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  font-size: .92rem; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+
+@media (max-width: 860px) {
+  .chat-single .dm-main { height: 64vh; }
+  .mines { max-width: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
