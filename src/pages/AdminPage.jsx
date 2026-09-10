@@ -7,7 +7,7 @@ import {
 import { db } from '../firebase';
 import { COL, PERMISSIONS, OWNER_ROLE_ID } from '../lib/schema';
 import { useSession } from '../lib/session';
-import { PageHead, SectionHead, Empty, Loader, Modal, Field, ErrorNote, Tabs } from '../components/ui';
+import { PageHead, SectionHead, Empty, Loader, Modal, Field, ErrorNote, Tabs, UserLink } from '../components/ui';
 import Avatar from '../components/Avatar';
 
 export default function AdminPage() {
@@ -100,7 +100,7 @@ function Members() {
             <div key={a.id} className="row-item" style={{ flexWrap: 'wrap' }}>
               <Avatar profile={a} size={34} />
               <span className="me-text grow">
-                <strong className="truncate">{a.displayName || 'Astral member'}</strong>
+                <UserLink to={a.usernameLower || a.id} className="truncate">{a.displayName || 'Astral member'}</UserLink>
                 <small>{a.username ? `@${a.username}` : a.id.slice(0, 8)}</small>
               </span>
 

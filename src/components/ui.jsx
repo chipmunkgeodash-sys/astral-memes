@@ -106,3 +106,26 @@ export function Toast({ children }) {
   if (!children) return null;
   return <div className="toast" role="status">{children}</div>;
 }
+
+// Navigates without prop-drilling the router: pushState plus a synthetic
+// popstate, which is exactly what useRouter listens for.
+export function navigateTo(path) {
+  if (window.location.pathname === path) return;
+  window.history.pushState({}, '', path);
+  window.dispatchEvent(new PopStateEvent('popstate'));
+  window.scrollTo(0, 0);
+}
+
+// A member's name, linked to their profile. `to` is a username or a uid.
+export function UserLink({ to, children, className = '' }) {
+  if (!to) return <strong className={className}>{children}</strong>;
+  return (
+    <button
+      className={`user-link ${className}`}
+      onClick={(e) => { e.stopPropagation(); navigateTo(`/u/${encodeURIComponent(to)}`); }}
+      type="button"
+    >
+      {children}
+    </button>
+  );
+}

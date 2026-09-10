@@ -1,0 +1,139 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function me() {
+      return get(/databases/$(database)/documents/accounts/$(request.auth.uid)).data;
+    }
+
+    function isOwner() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/accounts/$(request.auth.uid))
+        && 'owner' in me().roleIds;
+    }
+
+    // True when the signed-in member holds `perm` through any assigned role, or
+    // directly on their account. Owners always pass.
+    function can(perm) {
+      return isOwner()
+        || (signedIn()
+            && exists(/databases/$(database)/documents/accounts/$(request.auth.uid))
+            && perm in me().permissions);
+    }
+
+    function mine(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    // Username -> auth email. Must be readable while signed OUT, because
+    // sign-in looks the address up before authenticating.
+    match /usernames/{name} {
+      allow read: if true;
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isOwner();
+    }
+
+    // Profiles are visible to any member; you edit your own, Owners edit anyone.
+    // Role and permission changes are Owner-only even on your own document.
+    match /accounts/{uid} {
+      allow read: if signedIn();
+      allow create: if mine(uid)
+        && request.resource.data.roleIds.hasOnly(['member'])
+        && request.resource.data.permissions.size() == 0;
+      allow update: if isOwner()
+        || (mine(uid)
+            && request.resource.data.roleIds == resource.data.roleIds
+            && request.resource.data.permissions == resource.data.permissions);
+      allow delete: if isOwner();
+    }
+
+    // Balances. A member may only ever DECREASE their own (redeeming); any
+    // increase has to come from an Owner, so nobody can mint themselves coins.
+    match /wallets/{uid} {
+      allow read: if signedIn();
+      allow create: if isOwner() || (mine(uid) && request.resource.data.balance == 0);
+      allow update: if isOwner()
+        || (mine(uid) && request.resource.data.balance <= resource.data.balance);
+      allow delete: if isOwner();
+    }
+
+    match /roles/{roleId} {
+      allow read: if signedIn();
+      allow write: if isOwner();
+    }
+
+    match /posts/{postId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      // Anyone signed in may like; only the author or a moderator may edit the rest.
+      allow update: if signedIn() && (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+        || mine(resource.data.uid) || can('moderateMemes')
+      );
+      allow delete: if mine(resource.data.uid) || can('moderateMemes') || isOwner();
+    }
+
+    match /messages/{messageId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow update: if false;
+      allow delete: if mine(resource.data.uid) || can('deleteMessages') || can('manageChat') || isOwner();
+    }
+
+    match /chat/{docId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow delete: if mine(resource.data.uid) || can('manageChat') || isOwner();
+    }
+
+    match /challenges/{challengeId} {
+      allow read: if signedIn();
+      allow write: if isOwner();
+    }
+
+    // Your own entry only. Points are self-reported, same as the original.
+    match /challengeEntries/{entryId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow delete: if isOwner();
+    }
+
+    match /polls/{pollId} {
+      allow read: if signedIn();
+      allow create, delete: if isOwner();
+      // Members may only add or change their own vote key.
+      allow update: if isOwner() || (
+        signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['votes.' + request.auth.uid])
+      );
+    }
+
+    match /announcements/{id} {
+      allow read: if signedIn();
+      allow write: if isOwner() || can('manageAnnouncements');
+    }
+
+    match /storeItems/{id} {
+      allow read: if signedIn();
+      allow write: if isOwner();
+    }
+
+    // Redemption and Owner-grant ledger. Append-only.
+    match /redemptions/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update, delete: if isOwner();
+    }
+
+    // Everything not named above stays closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -588,6 +588,109 @@ img { max-width: 100%; }
   .topbar .search { max-width: none; }
 }
 
+/* ============================================================================
+   Futuristic layer — glow, glass and gradient over the clean base.
+   ========================================================================= */
+
+:root {
+  --glow: 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent),
+          0 6px 24px color-mix(in srgb, var(--accent) 18%, transparent);
+  --grad: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 45%, #16d1e0));
+}
+
+/* Glass top bar over a faint accent wash. */
+.topbar {
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  backdrop-filter: saturate(1.6) blur(12px);
+  -webkit-backdrop-filter: saturate(1.6) blur(12px);
+  border-bottom-color: color-mix(in srgb, var(--accent) 14%, var(--border));
+}
+
+/* The page sits on a very soft accent aura rather than flat grey. */
+body::before {
+  content: "";
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(60rem 40rem at 12% -10%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%),
+    radial-gradient(50rem 34rem at 105% 8%, color-mix(in srgb, #16d1e0 9%, transparent), transparent 70%);
+}
+
+.brand-mark {
+  background: var(--grad);
+  box-shadow: var(--glow);
+}
+
+.btn-primary {
+  background: var(--grad);
+  border-color: transparent;
+  box-shadow: 0 2px 14px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.btn-primary:hover {
+  background: var(--grad);
+  filter: brightness(1.08);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--accent) 42%, transparent);
+}
+
+.tile:hover, .game-tile:hover {
+  box-shadow: var(--glow);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.nav-item[aria-current="page"] {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.chip-accent {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.rank-1 { background: var(--grad); border-color: transparent; box-shadow: var(--glow); }
+
+.avatar { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent); }
+
+.input:focus, .field input:focus, .field textarea:focus, .search:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* Numbers read as data. */
+.chip, .rank { font-variant-numeric: tabular-nums; }
+
+/* Auth: gradient headline and a faint grid on the panel. */
+.auth-side {
+  background:
+    radial-gradient(38rem 30rem at 80% -10%, rgba(22,209,224,.34), transparent 65%),
+    linear-gradient(155deg, #5b5bd6 0%, #221f4d 100%);
+}
+.auth-side::after {
+  content: "";
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(70% 60% at 40% 40%, #000 35%, transparent 78%);
+}
+.auth-card h1 {
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Profile links. */
+.user-link {
+  border: 0; background: none; padding: 0;
+  font: inherit; font-weight: 650; color: inherit;
+  text-align: left;
+  border-bottom: 1px solid transparent;
+  transition: color .13s, border-color .13s;
+}
+.user-link:hover { color: var(--accent); border-bottom-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.bubble.mine .user-link:hover { color: #fff; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }

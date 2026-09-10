@@ -7,7 +7,7 @@ import {
 import { db } from '../firebase';
 import { COL } from '../lib/schema';
 import { useSession } from '../lib/session';
-import { PageHead, Empty, Loader, ErrorNote, Field } from '../components/ui';
+import { PageHead, Empty, Loader, ErrorNote, Field, UserLink } from '../components/ui';
 import Avatar from '../components/Avatar';
 
 export default function FeedPage() {
@@ -93,7 +93,7 @@ export default function FeedPage() {
               <article key={p.id} className="card">
                 <header className="row">
                   <Avatar profile={{ id: p.uid, displayName: p.displayName }} size={32} />
-                  <strong>{p.displayName || 'Astral member'}</strong>
+                  <UserLink to={p.uid}>{p.displayName || 'Astral member'}</UserLink>
                   <span className="faint">{formatWhen(p.createdAt)}</span>
                 </header>
                 {p.text && <p className="post-body">{p.text}</p>}

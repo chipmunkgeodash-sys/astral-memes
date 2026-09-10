@@ -7,7 +7,7 @@ import {
 import { db } from '../firebase';
 import { COL } from '../lib/schema';
 import { useSession } from '../lib/session';
-import { PageHead, Empty, Loader, ErrorNote } from '../components/ui';
+import { PageHead, Empty, Loader, ErrorNote, UserLink } from '../components/ui';
 import Avatar from '../components/Avatar';
 
 const LOUNGE = 'the-lounge';
@@ -111,7 +111,7 @@ export default function MessagesPage() {
             ) : (
               messages.map((m) => (
                 <div key={m.id} className={m.uid === user.uid ? 'bubble mine' : 'bubble'}>
-                  {m.uid !== user.uid && <strong>{m.displayName || 'Astral member'}</strong>}
+                  {m.uid !== user.uid && <strong><UserLink to={m.uid}>{m.displayName || 'Astral member'}</UserLink></strong>}
                   {m.text}
                   {canDelete(m) && (
                     <button

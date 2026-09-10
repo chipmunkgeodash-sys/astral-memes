@@ -8,9 +8,9 @@ import ChallengesPage from './pages/ChallengesPage';
 import PollsPage from './pages/PollsPage';
 import StorePage from './pages/StorePage';
 import GamesPage from './pages/GamesPage';
-import BrowserPage from './pages/BrowserPage';
 import MessagesPage from './pages/MessagesPage';
 import ProfilePage from './pages/ProfilePage';
+import UserPage from './pages/UserPage';
 import AdminPage from './pages/AdminPage';
 
 const ROUTES = {
@@ -20,9 +20,9 @@ const ROUTES = {
   polls: PollsPage,
   store: StorePage,
   games: GamesPage,
-  browser: BrowserPage,
   messages: MessagesPage,
   profile: ProfilePage,
+  u: UserPage,
   admin: AdminPage
 };
 
@@ -41,8 +41,7 @@ export default function App() {
 
   if (!user) return <AuthPage />;
 
-  const key = router.segments[0] || '';
-  const Page = ROUTES[key] || HomePage;
+  const Page = ROUTES[router.segments[0] || ''] || HomePage;
 
   return (
     <Shell router={router}>

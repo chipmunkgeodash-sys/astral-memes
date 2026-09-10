@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Rss, Trophy, Vote, Gamepad2, Store, Globe, MessageCircle, Megaphone, Coins } from 'lucide-react';
+import { Rss, Trophy, Vote, Gamepad2, Store, MessageCircle, Megaphone, Coins } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { COL } from '../lib/schema';
@@ -12,8 +12,7 @@ const TILES = [
   { to: '/challenges', label: 'Challenges', body: 'Climb the leaderboard', icon: Trophy },
   { to: '/messages', label: 'Messages', body: 'The lounge and your DMs', icon: MessageCircle },
   { to: '/polls', label: 'Polls', body: 'One vote each', icon: Vote },
-  { to: '/store', label: 'Store', body: 'Spend what you earn', icon: Store },
-  { to: '/browser', label: 'Browser', body: 'A private window', icon: Globe }
+  { to: '/store', label: 'Store', body: 'Spend what you earn', icon: Store }
 ];
 
 export default function HomePage({ router }) {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  Home, Rss, Trophy, Vote, Store, Gamepad2, Globe, MessageCircle,
+  Home, Rss, Trophy, Vote, Store, Gamepad2, MessageCircle,
   Shield, LogOut, Search, Coins, Menu, Sun, Moon, Sparkles
 } from 'lucide-react';
 import { useSession } from '../lib/session';
@@ -14,11 +14,10 @@ const NAV = [
   { to: '/polls', label: 'Polls', icon: Vote },
   { to: '/store', label: 'Store', icon: Store },
   { to: '/games', label: 'Games', icon: Gamepad2 },
-  { to: '/browser', label: 'Browser', icon: Globe },
   { to: '/messages', label: 'Messages', icon: MessageCircle }
 ];
 
-const MOBILE_NAV = [NAV[0], NAV[1], NAV[2], NAV[5], NAV[7]];
+const MOBILE_NAV = [NAV[0], NAV[1], NAV[2], NAV[5], NAV[6]];
 
 export default function Shell({ router, children }) {
   const { profile, balance, can, isOwner, signOut } = useSession();

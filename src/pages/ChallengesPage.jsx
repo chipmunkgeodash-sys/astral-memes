@@ -7,7 +7,7 @@ import {
 import { db } from '../firebase';
 import { COL, LIMITS } from '../lib/schema';
 import { useSession } from '../lib/session';
-import { PageHead, Empty, Loader, Modal, Field, ErrorNote, Tabs } from '../components/ui';
+import { PageHead, Empty, Loader, Modal, Field, ErrorNote, Tabs, UserLink } from '../components/ui';
 import Avatar from '../components/Avatar';
 
 export default function ChallengesPage() {
@@ -172,7 +172,7 @@ export default function ChallengesPage() {
                       <div key={e.id} className={e.uid === user?.uid ? 'row-item is-me' : 'row-item'}>
                         <span className={i === 0 ? 'rank rank-1' : 'rank'}>{i + 1}</span>
                         <Avatar profile={{ id: e.uid, displayName: e.displayName }} size={30} />
-                        <strong className="grow truncate">{e.displayName || 'Astral member'}</strong>
+                        <UserLink to={e.uid} className="grow truncate">{e.displayName || 'Astral member'}</UserLink>
                         {i === 0 && ended && <Crown size={15} style={{ color: 'var(--accent)' }} />}
                         <span className="chip">{(e.points || 0).toLocaleString()}</span>
                       </div>
