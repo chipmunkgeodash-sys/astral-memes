@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import {
-  Home, Rss, Trophy, Vote, Store, Gamepad2, Globe,
-  MessageCircle, User, Shield, LogOut, Search, Coins
+  Home, Rss, Trophy, Vote, Store, Gamepad2, Globe, MessageCircle,
+  Shield, LogOut, Search, Coins, Menu, Sun, Moon, Sparkles
 } from 'lucide-react';
 import { useSession } from '../lib/session';
+import { useTheme } from '../lib/theme';
 import Avatar from './Avatar';
 
 const NAV = [
@@ -17,93 +18,107 @@ const NAV = [
   { to: '/messages', label: 'Messages', icon: MessageCircle }
 ];
 
-// Bottom bar on mobile is a subset — the original only surfaced five.
 const MOBILE_NAV = [NAV[0], NAV[1], NAV[2], NAV[5], NAV[7]];
 
 export default function Shell({ router, children }) {
   const { profile, balance, can, isOwner, signOut } = useSession();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const here = (to) => (to === '/' ? router.path === '/' : router.path.startsWith(to));
+  const { toggle, isDark } = useTheme();
+  const [open, setOpen] = useState(false);
 
-  const go = (to) => { router.navigate(to); setMenuOpen(false); };
+  const active = (to) => (to === '/' ? router.path === '/' : router.path.startsWith(to));
+  const go = (to) => { router.navigate(to); setOpen(false); };
+  const showAdmin = isOwner || can('accessAdmin');
 
   return (
-    <div className="app-shell">
-      <aside className={menuOpen ? 'sidebar open' : 'sidebar'}>
-        <div className="brand" onClick={() => go('/')} role="button" tabIndex={0}>
-          <span className="planet" />
-          <strong>Astral Memes</strong>
-        </div>
+    <div className="app">
+      <aside className={open ? 'sidebar open' : 'sidebar'}>
+        <button className="brand" onClick={() => go('/')}>
+          <span className="brand-mark"><Sparkles size={16} /></span>
+          Astral
+        </button>
 
         <nav>
           {NAV.map(({ to, label, icon: Icon }) => (
             <button
               key={to}
-              className={here(to) ? 'nav-label active' : 'nav-label'}
+              className="nav-item"
+              aria-current={active(to) ? 'page' : undefined}
               onClick={() => go(to)}
+              style={{ width: '100%' }}
             >
-              <Icon size={18} />
-              <span>{label}</span>
+              <Icon size={17} />
+              {label}
             </button>
           ))}
-          {(isOwner || can('accessAdmin')) && (
+          {showAdmin && (
             <button
-              className={here('/admin') ? 'nav-label active' : 'nav-label'}
+              className="nav-item"
+              aria-current={active('/admin') ? 'page' : undefined}
               onClick={() => go('/admin')}
+              style={{ width: '100%' }}
             >
-              <Shield size={18} />
-              <span>Admin</span>
+              <Shield size={17} />
+              Admin
             </button>
           )}
         </nav>
 
-        <div className="sidebar-bottom">
-          <button className="profile-trigger" onClick={() => go('/profile')}>
-            <Avatar profile={profile} size={32} />
-            <span>
-              <strong>{profile?.displayName || 'Astral member'}</strong>
-              <small>{isOwner ? 'Owner' : 'Astral member'}</small>
+        <div className="sidebar-foot">
+          <button className="me" onClick={() => go('/profile')}>
+            <Avatar profile={profile} size={30} />
+            <span className="me-text">
+              <strong className="truncate">{profile?.displayName || 'Astral member'}</strong>
+              <small>{isOwner ? 'Owner' : 'Member'}</small>
             </span>
           </button>
-          <button className="text-button" onClick={signOut}>
-            <LogOut size={16} /> Sign out
+          <button className="nav-item" onClick={signOut} style={{ width: '100%' }}>
+            <LogOut size={17} /> Sign out
           </button>
         </div>
       </aside>
 
-      {menuOpen && <div className="mobile-scrim" onClick={() => setMenuOpen(false)} />}
+      {open && <div className="scrim" onClick={() => setOpen(false)} />}
 
-      <div className="main-area">
+      <div className="main">
         <header className="topbar">
-          <button className="icon-btn mobile-only" onClick={() => setMenuOpen((v) => !v)}>
-            <span className="planet" />
+          <button
+            className="btn btn-ghost btn-icon only-mobile"
+            onClick={() => setOpen((v) => !v)}
+            aria-label="Menu"
+          >
+            <Menu size={18} />
           </button>
-          <button className="search-trigger" onClick={() => go('/feed')}>
-            <Search size={16} />
-            <span>People, posts, hashtags, announcements…</span>
-          </button>
-          <div className="top-actions">
-            <span className="wallet-pill" title="Astral Coins">
-              <Coins size={15} />
-              {(balance).toLocaleString()}
+
+          <label className="search">
+            <Search size={15} />
+            <input placeholder="Search people, posts, announcements…" />
+          </label>
+
+          <div className="row" style={{ marginLeft: 'auto' }}>
+            <span className="chip chip-accent" title="Astral Coins">
+              <Coins size={13} /> {balance.toLocaleString()}
             </span>
-            <button className="icon-btn" onClick={() => go('/profile')}>
-              <Avatar profile={profile} size={28} />
+            <button
+              className="btn btn-ghost btn-icon"
+              onClick={toggle}
+              aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+              title={isDark ? 'Light mode' : 'Dark mode'}
+            >
+              {isDark ? <Sun size={17} /> : <Moon size={17} />}
+            </button>
+            <button className="btn btn-ghost btn-icon" onClick={() => go('/profile')} aria-label="Profile">
+              <Avatar profile={profile} size={26} />
             </button>
           </div>
         </header>
 
-        <main className="page">{children}</main>
+        <main className="content">{children}</main>
 
-        <nav className="bottom-nav mobile-only">
+        <nav className="tabbar">
           {MOBILE_NAV.map(({ to, label, icon: Icon }) => (
-            <button
-              key={to}
-              className={here(to) ? 'nav-bottom active' : 'nav-bottom'}
-              onClick={() => go(to)}
-            >
+            <button key={to} aria-current={active(to) ? 'page' : undefined} onClick={() => go(to)}>
               <Icon size={18} />
-              <small>{label}</small>
+              {label}
             </button>
           ))}
         </nav>

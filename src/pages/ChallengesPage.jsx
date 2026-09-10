@@ -7,7 +7,7 @@ import {
 import { db } from '../firebase';
 import { COL, LIMITS } from '../lib/schema';
 import { useSession } from '../lib/session';
-import { SectionTitle, Empty, Loader, Modal, Field, ErrorNote } from '../components/ui';
+import { PageHead, Empty, Loader, Modal, Field, ErrorNote, Tabs } from '../components/ui';
 import Avatar from '../components/Avatar';
 
 export default function ChallengesPage() {
@@ -15,7 +15,7 @@ export default function ChallengesPage() {
   const [challenges, setChallenges] = useState(null);
   const [entries, setEntries] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
-  const [composerOpen, setComposerOpen] = useState(false);
+  const [composer, setComposer] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
 
@@ -32,7 +32,6 @@ export default function ChallengesPage() {
       || challenges[0];
   }, [challenges, selectedId]);
 
-  // Entries for whichever challenge is on screen.
   useEffect(() => {
     if (!selected) { setEntries([]); return undefined; }
     return onSnapshot(
@@ -42,7 +41,6 @@ export default function ChallengesPage() {
     );
   }, [selected?.id]);
 
-  // Ranked once, used for both the winner banner and the leaderboard.
   const ranked = useMemo(
     () => [...entries].sort((a, b) => (b.points || 0) - (a.points || 0)),
     [entries]
@@ -66,7 +64,7 @@ export default function ChallengesPage() {
   };
 
   const refill = async () => {
-    if (!selected || !user || !mine) return;
+    if (!mine) return;
     setBusy('refill'); setError('');
     try {
       await updateDoc(doc(db, COL.challengeEntries, mine.id), {
@@ -78,13 +76,13 @@ export default function ChallengesPage() {
   if (challenges === null) return <Loader label="Loading challenges…" />;
 
   return (
-    <div className="challenge-layout">
-      <SectionTitle
-        eyebrow="ALWAYS OPEN + WEEKLY"
-        title="Explore challenges"
+    <div className="stack">
+      <PageHead
+        eyebrow="Always open + weekly"
+        title="Challenges"
         actions={isOwner && (
-          <button className="primary" onClick={() => setComposerOpen(true)}>
-            <Plus size={16} /> New challenge
+          <button className="btn btn-primary" onClick={() => setComposer(true)}>
+            <Plus size={15} /> New challenge
           </button>
         )}
       />
@@ -95,114 +93,99 @@ export default function ChallengesPage() {
         <Empty
           icon={Trophy}
           title="No challenge yet."
-          body={isOwner
-            ? "Create a challenge when you're ready to start the week."
-            : 'An Owner will publish the next weekly challenge.'}
+          body={isOwner ? 'Create one when you’re ready to start the week.' : 'An Owner will publish the next weekly challenge.'}
         />
       ) : (
         <>
-          <div className="challenge-list">
-            {challenges.map((c) => (
-              <button
-                key={c.id}
-                className={selected?.id === c.id ? 'challenge-status selected' : 'challenge-status'}
-                onClick={() => setSelectedId(c.id)}
-              >
-                <strong>{c.title || 'Challenge'}</strong>
-                <span className={statusClass(c)}>{statusLabel(c)}</span>
-              </button>
-            ))}
-          </div>
+          <Tabs
+            value={selected?.id}
+            onChange={setSelectedId}
+            options={challenges.map((c) => ({ value: c.id, label: c.title || 'Challenge' }))}
+          />
 
           {selected && (
-            <div className="challenge-stage">
-              <div className="challenge-meta">
-                <h2 className="heading">{selected.title}</h2>
-                <p>{selected.description}</p>
-                <div className="challenge-dates">
-                  {selected.forever
-                    ? <span className="forever">Always open · Never ends</span>
-                    : <span>{formatRange(selected)}</span>}
+            <>
+              <div className="card">
+                <div className="spread">
+                  <div>
+                    <h2>{selected.title}</h2>
+                    <p className="muted" style={{ marginTop: 4 }}>{selected.description}</p>
+                  </div>
+                  <span className={`chip ${statusClass(selected)}`}>
+                    <span className="dot" /> {statusLabel(selected)}
+                  </span>
                 </div>
+                <p className="faint" style={{ marginTop: 10 }}>
+                  {selected.forever ? 'Always open · Never ends' : formatRange(selected)}
+                </p>
               </div>
 
               {winner && (
-                <div className="challenge-message forever-leaderboard">
-                  <Crown size={24} />
-                  <strong>Winner: {winner.displayName || 'Astral member'}</strong>
-                  <span>
-                    Finished first with {(winner.points || 0).toLocaleString()} points
-                    {ranked.length > 1 ? ` out of ${ranked.length} players.` : '.'}
-                  </span>
+                <div className="card" style={{ borderColor: 'var(--accent)' }}>
+                  <div className="row">
+                    <span className="tile-icon"><Crown size={18} /></span>
+                    <div>
+                      <span className="eyebrow">Final results</span>
+                      <h2>{winner.displayName || 'Astral member'} wins</h2>
+                      <p className="muted">
+                        {(winner.points || 0).toLocaleString()} points
+                        {ranked.length > 1 ? ` · beat ${ranked.length - 1} other${ranked.length > 2 ? 's' : ''}` : ''}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 
               {ended && !winner && (
-                <div className="challenge-message">
-                  <Trophy size={24} />
-                  <strong>This challenge has ended.</strong>
-                  <span>Nobody scored, so there's no winner to show.</span>
-                </div>
+                <Empty icon={Trophy} title="This challenge has ended." body="Nobody scored, so there’s no winner." />
               )}
 
               {!ended && !mine && (
-                <div className="challenge-message">
-                  <Trophy size={24} />
-                  <strong>{selected.forever ? 'Join the Forever Challenge first.' : 'Join the challenge first.'}</strong>
-                  <button className="primary" onClick={join} disabled={busy === 'join'}>
+                <div className="card spread">
+                  <span className="muted">
+                    {selected.forever ? 'Join the Forever Challenge to claim a spot.' : 'Join the challenge to take part.'}
+                  </span>
+                  <button className="btn btn-primary" onClick={join} disabled={busy === 'join'}>
                     {busy === 'join' ? 'Joining…' : 'Join challenge'}
                   </button>
                 </div>
               )}
 
               {!ended && mine && selected.forever && (mine.points || 0) === 0 && (
-                <div className="challenge-message">
-                  <RefreshCw size={24} />
-                  <strong>Ready for another run?</strong>
-                  <span>The Forever Challenge never locks you out. Take a free 100-point refill and keep playing.</span>
-                  <button className="primary" onClick={refill} disabled={busy === 'refill'}>
-                    {busy === 'refill' ? 'Refilling…' : 'Take the refill'}
+                <div className="card spread">
+                  <span className="muted">
+                    The Forever Challenge never locks you out. Take a free 100-point refill.
+                  </span>
+                  <button className="btn btn-primary" onClick={refill} disabled={busy === 'refill'}>
+                    <RefreshCw size={15} /> {busy === 'refill' ? 'Refilling…' : 'Refill'}
                   </button>
                 </div>
               )}
 
-              <Leaderboard ranked={ranked} meUid={user?.uid} ended={ended} />
-            </div>
+              <section>
+                <h2 style={{ marginBottom: 12 }}>{ended ? 'Final standings' : 'Leaderboard'}</h2>
+                {!ranked.length ? (
+                  <Empty icon={Medal} title="Nobody has scored yet." body="Be the first on the board." />
+                ) : (
+                  <div className="list">
+                    {ranked.map((e, i) => (
+                      <div key={e.id} className={e.uid === user?.uid ? 'row-item is-me' : 'row-item'}>
+                        <span className={i === 0 ? 'rank rank-1' : 'rank'}>{i + 1}</span>
+                        <Avatar profile={{ id: e.uid, displayName: e.displayName }} size={30} />
+                        <strong className="grow truncate">{e.displayName || 'Astral member'}</strong>
+                        {i === 0 && ended && <Crown size={15} style={{ color: 'var(--accent)' }} />}
+                        <span className="chip">{(e.points || 0).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </>
           )}
         </>
       )}
 
-      {composerOpen && (
-        <ChallengeComposer onClose={() => setComposerOpen(false)} />
-      )}
-    </div>
-  );
-}
-
-function Leaderboard({ ranked, meUid, ended }) {
-  if (!ranked.length) {
-    return (
-      <Empty
-        icon={Medal}
-        title="Join the Forever Challenge to claim the first spot."
-        body="Nobody has scored yet."
-      />
-    );
-  }
-  return (
-    <div className="forever-leaderboard">
-      <span className="eyebrow">{ended ? 'FINAL RESULTS' : 'Forever points leaderboard'}</span>
-      <ol className="leaderboard-list">
-        {ranked.map((e, i) => (
-          <li key={e.id} className={e.uid === meUid ? 'member-row you' : 'member-row'}>
-            <span className={i === 0 ? 'badge star' : 'badge'}>{i + 1}</span>
-            <Avatar profile={{ id: e.uid, displayName: e.displayName }} size={28} />
-            <strong>{e.displayName || 'Astral member'}</strong>
-            {i === 0 && ended && <Crown size={15} />}
-            <span className="count-line">{(e.points || 0).toLocaleString()}</span>
-          </li>
-        ))}
-      </ol>
+      {composer && <ChallengeComposer onClose={() => setComposer(false)} />}
     </div>
   );
 }
@@ -216,24 +199,19 @@ function ChallengeComposer({ onClose }) {
   const [busy, setBusy] = useState(false);
 
   const publish = async () => {
-    if (!title.trim() || !description.trim()) {
-      setError('Add a title and description.');
-      return;
-    }
+    if (!title.trim() || !description.trim()) { setError('Add a title and description.'); return; }
     if (!forever && (days < 1 || days > LIMITS.weeklyChallengeMaxDays)) {
-      setError('A weekly challenge can last up to 8 days.');
-      return;
+      setError('A weekly challenge can last up to 8 days.'); return;
     }
     setBusy(true); setError('');
     try {
       const startsAt = new Date();
-      const endsAt = forever ? null : new Date(startsAt.getTime() + days * 86400000);
       await addDoc(collection(db, COL.challenges), {
         title: title.trim(),
         description: description.trim(),
         forever,
         startsAt,
-        endsAt,
+        endsAt: forever ? null : new Date(startsAt.getTime() + days * 86400000),
         createdAt: serverTimestamp()
       });
       onClose();
@@ -242,39 +220,31 @@ function ChallengeComposer({ onClose }) {
 
   return (
     <Modal
-      title="Create the weekly challenge"
+      title="New challenge"
       onClose={onClose}
       footer={
         <>
-          <button className="secondary" onClick={onClose}>Cancel</button>
-          <button className="primary" onClick={publish} disabled={busy}>
-            {busy ? 'Publishing…' : 'Publish challenge'}
+          <button className="btn" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={publish} disabled={busy}>
+            {busy ? 'Publishing…' : 'Publish'}
           </button>
         </>
       }
     >
-      <div className="challenge-composer form-grid">
-        <Field label="Title">
-          <input value={title} onChange={(e) => setTitle(e.target.value)} />
+      <Field label="Title"><input value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
+      <Field label="Description" hint="Tell everyone what this challenge is about.">
+        <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+      </Field>
+      <label className="row">
+        <input type="checkbox" checked={forever} onChange={(e) => setForever(e.target.checked)} />
+        <span>Forever Challenge — always open, never ends</span>
+      </label>
+      {!forever && (
+        <Field label="Length in days" hint="Up to 8.">
+          <input type="number" min={1} max={LIMITS.weeklyChallengeMaxDays} value={days} onChange={(e) => setDays(Number(e.target.value))} />
         </Field>
-        <Field label="Description" hint="Tell everyone what this week's challenge is about.">
-          <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
-        </Field>
-        <label className="check-row">
-          <input type="checkbox" checked={forever} onChange={(e) => setForever(e.target.checked)} />
-          <span>Forever Challenge — always open, never ends</span>
-        </label>
-        {!forever && (
-          <Field label="Length in days" hint="Up to 8 days.">
-            <input
-              type="number" min={1} max={LIMITS.weeklyChallengeMaxDays}
-              value={days}
-              onChange={(e) => setDays(Number(e.target.value))}
-            />
-          </Field>
-        )}
-        <ErrorNote>{error}</ErrorNote>
-      </div>
+      )}
+      <ErrorNote>{error}</ErrorNote>
     </Modal>
   );
 }
@@ -285,25 +255,23 @@ function toDate(v) {
   const d = new Date(v);
   return Number.isNaN(d.getTime()) ? null : d;
 }
-
 function isEnded(c) {
   if (!c || c.forever) return false;
   const end = toDate(c.endsAt);
   return !!end && end.getTime() < Date.now();
 }
-
 function statusLabel(c) {
   if (c.forever) return 'Forever';
   const start = toDate(c.startsAt);
   if (start && start.getTime() > Date.now()) return 'Upcoming';
   return isEnded(c) ? 'Ended' : 'Live';
 }
-
 function statusClass(c) {
-  const l = statusLabel(c).toLowerCase();
-  return l === 'forever' ? 'forever' : l === 'ended' ? 'ended' : l === 'upcoming' ? 'upcoming' : 'live';
+  const l = statusLabel(c);
+  if (l === 'Ended') return 'chip-ended';
+  if (l === 'Live') return 'chip-live';
+  return 'chip-accent';
 }
-
 function formatRange(c) {
   const s = toDate(c.startsAt);
   const e = toDate(c.endsAt);

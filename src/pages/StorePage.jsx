@@ -7,7 +7,7 @@ import {
 import { db } from '../firebase';
 import { COL, LIMITS } from '../lib/schema';
 import { useSession } from '../lib/session';
-import { SectionTitle, Empty, Loader, Modal, Field, ErrorNote } from '../components/ui';
+import { PageHead, SectionHead, Empty, Loader, Modal, Field, ErrorNote } from '../components/ui';
 
 export default function StorePage() {
   const { user, profile, balance, isOwner } = useSession();
@@ -56,18 +56,17 @@ export default function StorePage() {
   if (items === null) return <Loader label="Loading the Store…" />;
 
   return (
-    <div className="store-grid">
-      <SectionTitle
-        eyebrow="SPEND WHAT YOU EARN"
-        title="Rewards Store"
-        actions={isOwner && <button className="primary" onClick={() => setOpen(true)}><Plus size={16} /> Add reward</button>}
+    <div className="stack">
+      <PageHead
+        eyebrow="Spend what you earn"
+        title="Store"
+        actions={
+          <>
+            <span className="chip chip-accent"><Coins size={13} /> {balance.toLocaleString()}</span>
+            {isOwner && <button className="btn btn-primary" onClick={() => setOpen(true)}><Plus size={15} /> Add reward</button>}
+          </>
+        }
       />
-      <p className="owner-note">Redeem banked Astral Coins for Owner-created in-app rewards.</p>
-
-      <div className="coin-summary community-card">
-        <span className="wallet-pill"><Coins size={15} /> {balance.toLocaleString()} Astral Coins</span>
-        <span className="count-line">Store balance</span>
-      </div>
 
       <ErrorNote>{error}</ErrorNote>
 
@@ -75,42 +74,54 @@ export default function StorePage() {
         <Empty
           icon={Store}
           title="The Store is waiting."
-          body={isOwner ? 'Add the first cosmetic or community reward.' : 'An Owner will add rewards you can redeem with banked coins.'}
+          body={isOwner ? 'Add the first cosmetic or community reward.' : 'An Owner will add rewards you can redeem.'}
         />
       ) : (
-        <div className="preset-grid">
-          {items.map((it) => (
-            <article key={it.id} className="reward-card preset-card">
-              <span className="reward-icon"><Store size={18} /></span>
-              <strong>{it.title}</strong>
-              <p>{it.description}</p>
-              <span className="wallet-pill"><Coins size={14} /> {(it.cost || 0).toLocaleString()}</span>
-              <button
-                className="primary"
-                onClick={() => redeem(it)}
-                disabled={busy === it.id || balance < (it.cost || 0)}
-              >
-                {busy === it.id ? 'Redeeming…' : 'Redeem'}
-              </button>
-              {isOwner && (
-                <button className="text-button danger" onClick={() => deleteDoc(doc(db, COL.storeItems, it.id))}>
-                  <Trash2 size={14} /> Remove
-                </button>
-              )}
-            </article>
-          ))}
+        <div className="grid">
+          {items.map((it) => {
+            const afford = balance >= (it.cost || 0);
+            return (
+              <article key={it.id} className="tile" style={{ cursor: 'default' }}>
+                <span className="tile-icon"><Store size={18} /></span>
+                <strong>{it.title}</strong>
+                <span>{it.description}</span>
+                <div className="spread" style={{ width: '100%', marginTop: 8 }}>
+                  <span className="chip"><Coins size={13} /> {(it.cost || 0).toLocaleString()}</span>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => redeem(it)}
+                    disabled={busy === it.id || !afford}
+                    title={afford ? undefined : 'Not enough coins'}
+                  >
+                    {busy === it.id ? 'Redeeming…' : 'Redeem'}
+                  </button>
+                </div>
+                {isOwner && (
+                  <button className="btn btn-danger btn-sm" onClick={() => deleteDoc(doc(db, COL.storeItems, it.id))}>
+                    <Trash2 size={13} /> Remove
+                  </button>
+                )}
+              </article>
+            );
+          })}
         </div>
       )}
 
       {!!history.length && (
-        <section className="redemption-history">
-          <SectionTitle title="Your history" />
-          {history.map((h) => (
-            <div key={h.id} className="count-line">
-              <span>{h.type === 'ownerGrant' ? 'Owner grant' : h.itemTitle || 'Reward'}</span>
-              <strong>{h.amount > 0 ? `+${h.amount}` : h.amount}</strong>
-            </div>
-          ))}
+        <section>
+          <SectionHead title="Your history" />
+          <div className="list">
+            {history.map((h) => (
+              <div key={h.id} className="row-item">
+                <span className="grow truncate">
+                  {h.type === 'ownerGrant' ? (h.note || 'Owner grant') : (h.itemTitle || 'Reward')}
+                </span>
+                <span className={h.amount > 0 ? 'chip chip-live' : 'chip'}>
+                  {h.amount > 0 ? `+${h.amount.toLocaleString()}` : h.amount.toLocaleString()}
+                </span>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
@@ -143,23 +154,21 @@ function RewardComposer({ onClose }) {
 
   return (
     <Modal
-      title="New store reward"
+      title="New reward"
       onClose={onClose}
       footer={
         <>
-          <button className="secondary" onClick={onClose}>Cancel</button>
-          <button className="primary" onClick={add} disabled={busy}>{busy ? 'Adding…' : 'Add to Store'}</button>
+          <button className="btn" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={add} disabled={busy}>{busy ? 'Adding…' : 'Add to Store'}</button>
         </>
       }
     >
-      <div className="store-composer form-grid">
-        <Field label="Title"><input value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
-        <Field label="Description"><textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} /></Field>
-        <Field label="Coin cost" hint="1 to 100,000.">
-          <input type="number" min={LIMITS.rewardCostMin} max={LIMITS.rewardCostMax} value={cost} onChange={(e) => setCost(e.target.value)} />
-        </Field>
-        <ErrorNote>{error}</ErrorNote>
-      </div>
+      <Field label="Title"><input value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
+      <Field label="Description"><textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} /></Field>
+      <Field label="Coin cost" hint="1 to 100,000.">
+        <input type="number" min={LIMITS.rewardCostMin} max={LIMITS.rewardCostMax} value={cost} onChange={(e) => setCost(e.target.value)} />
+      </Field>
+      <ErrorNote>{error}</ErrorNote>
     </Modal>
   );
 }

@@ -32,8 +32,8 @@ export default function App() {
 
   if (!ready) {
     return (
-      <div className="state-page">
-        <div className="loader" />
+      <div className="state">
+        <div className="spinner" />
         <span>Loading Astral…</span>
       </div>
     );

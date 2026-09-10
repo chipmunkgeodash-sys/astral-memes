@@ -7,7 +7,7 @@ import {
 import { db } from '../firebase';
 import { COL } from '../lib/schema';
 import { useSession } from '../lib/session';
-import { SectionTitle, Empty, Loader, ErrorNote, Field } from '../components/ui';
+import { PageHead, Empty, Loader, ErrorNote, Field } from '../components/ui';
 import Avatar from '../components/Avatar';
 
 export default function FeedPage() {
@@ -25,10 +25,7 @@ export default function FeedPage() {
   ), []);
 
   const share = async () => {
-    if (!text.trim() && !imageUrl.trim()) {
-      setError('Add a caption or image first.');
-      return;
-    }
+    if (!text.trim() && !imageUrl.trim()) { setError('Add a caption or image first.'); return; }
     setBusy(true); setError('');
     try {
       await addDoc(collection(db, COL.posts), {
@@ -52,19 +49,14 @@ export default function FeedPage() {
     } catch (err) { setError(err.message); }
   };
 
-  const remove = async (post) => {
-    try { await deleteDoc(doc(db, COL.posts, post.id)); }
-    catch (err) { setError(err.message); }
-  };
-
   if (posts === null) return <Loader label="Loading the feed…" />;
 
   return (
-    <div className="feed-panel">
-      <SectionTitle eyebrow="FROM THE COMMUNITY" title="Community feed" />
+    <div className="stack content-narrow">
+      <PageHead eyebrow="From the community" title="Feed" />
 
-      <div className="community-card">
-        <Field label="Create a post">
+      <div className="card">
+        <Field label="Share something">
           <textarea
             rows={3}
             value={text}
@@ -72,49 +64,58 @@ export default function FeedPage() {
             placeholder="Play something new. Share something funny."
           />
         </Field>
-        <Field label="Image URL (optional)">
-          <span className="upload-zone">
-            <ImageIcon size={15} />
-            <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://…" />
-          </span>
-        </Field>
-        {imageUrl.trim() && (
-          <img className="upload-preview post-image" src={imageUrl} alt="Post preview" />
-        )}
-        <ErrorNote>{error}</ErrorNote>
-        <button className="primary" onClick={share} disabled={busy}>
-          <Send size={15} /> {busy ? 'Sharing…' : 'Share post'}
-        </button>
+        <div style={{ marginTop: 12 }}>
+          <Field label="Image URL (optional)">
+            <span className="search">
+              <ImageIcon size={15} />
+              <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://…" />
+            </span>
+          </Field>
+        </div>
+        {imageUrl.trim() && <img className="post-image" src={imageUrl} alt="" />}
+        <div style={{ marginTop: 12 }}><ErrorNote>{error}</ErrorNote></div>
+        <div className="spread" style={{ marginTop: 12 }}>
+          <span className="faint">{text.length} characters</span>
+          <button className="btn btn-primary" onClick={share} disabled={busy}>
+            <Send size={15} /> {busy ? 'Sharing…' : 'Post'}
+          </button>
+        </div>
       </div>
 
       {!posts.length ? (
-        <Empty icon={Rss} title="No posts yet. The first one could be yours." />
+        <Empty icon={Rss} title="Nothing here yet." body="The first post could be yours." />
       ) : (
-        posts.map((p) => {
-          const liked = (p.likes || []).includes(user.uid);
-          const canDelete = p.uid === user.uid || isOwner || can('moderateMemes');
-          return (
-            <article key={p.id} className="post community-card">
-              <header className="profile-meta">
-                <Avatar profile={{ id: p.uid, displayName: p.displayName }} size={32} />
-                <strong>{p.displayName || 'Astral member'}</strong>
-                <small>{formatWhen(p.createdAt)}</small>
-              </header>
-              {p.text && <p>{p.text}</p>}
-              {p.imageUrl && <img className="post-image" src={p.imageUrl} alt="" loading="lazy" />}
-              <footer className="game-actions">
-                <button className={liked ? 'text-button liked' : 'text-button'} onClick={() => toggleLike(p)}>
-                  <Heart size={15} /> {(p.likes || []).length || ''} {liked ? 'Liked' : 'Like'}
-                </button>
-                {canDelete && (
-                  <button className="text-button danger" onClick={() => remove(p)}>
-                    <Trash2 size={15} /> Delete post
+        <div className="list">
+          {posts.map((p) => {
+            const liked = (p.likes || []).includes(user.uid);
+            const canDelete = p.uid === user.uid || isOwner || can('moderateMemes');
+            return (
+              <article key={p.id} className="card">
+                <header className="row">
+                  <Avatar profile={{ id: p.uid, displayName: p.displayName }} size={32} />
+                  <strong>{p.displayName || 'Astral member'}</strong>
+                  <span className="faint">{formatWhen(p.createdAt)}</span>
+                </header>
+                {p.text && <p className="post-body">{p.text}</p>}
+                {p.imageUrl && <img className="post-image" src={p.imageUrl} alt="" loading="lazy" />}
+                <footer className="post-foot">
+                  <button
+                    className={liked ? 'btn btn-ghost btn-sm is-liked' : 'btn btn-ghost btn-sm'}
+                    onClick={() => toggleLike(p)}
+                  >
+                    <Heart size={15} fill={liked ? 'currentColor' : 'none'} />
+                    {(p.likes || []).length || 'Like'}
                   </button>
-                )}
-              </footer>
-            </article>
-          );
-        })
+                  {canDelete && (
+                    <button className="btn btn-danger btn-sm" onClick={() => deleteDoc(doc(db, COL.posts, p.id))}>
+                      <Trash2 size={14} /> Delete
+                    </button>
+                  )}
+                </footer>
+              </article>
+            );
+          })}
+        </div>
       )}
     </div>
   );

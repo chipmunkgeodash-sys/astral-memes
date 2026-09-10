@@ -1,34 +1,27 @@
 import { useState } from 'react';
-import {
-  Eye, EyeOff, Gamepad2, Users, Trophy, Sparkles, LogIn, Pause, Play, Info
-} from 'lucide-react';
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword
-} from 'firebase/auth';
+import { Eye, EyeOff, Gamepad2, Users, Trophy, Sparkles, Sun, Moon } from 'lucide-react';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { COL, LIMITS, MEMBER_ROLE_ID } from '../lib/schema';
 import { isValidUsername, isUsernameTaken, resolveAuthEmail, mintAuthEmail, normalize } from '../lib/usernames';
-import StarField from '../components/StarField';
+import { useTheme } from '../lib/theme';
+import { Field, ErrorNote, Tabs } from '../components/ui';
 
-const FEATURES = [
-  { icon: Gamepad2, text: 'Discover games' },
-  { icon: Users, text: 'Find your people' },
-  { icon: Trophy, text: 'Take on challenges' }
+const POINTS = [
+  { icon: Gamepad2, text: '1,578 games, ready to play' },
+  { icon: Users, text: 'A feed and DMs for your people' },
+  { icon: Trophy, text: 'Challenges, polls and rewards' }
 ];
 
 export default function AuthPage() {
+  const { toggle, isDark } = useTheme();
   const [mode, setMode] = useState('signin');
-  const [owner, setOwner] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [show, setShow] = useState(false);
-  const [particles, setParticles] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-
-  const switchMode = (next) => { setMode(next); setError(''); };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -47,20 +40,11 @@ export default function AuthPage() {
     setBusy(true);
     try {
       if (mode === 'signup') {
-        if (await isUsernameTaken(name)) {
-          setError('That username is already taken.');
-          return;
-        }
-        // The auth address is a fresh UUID, not derived from the username, and
-        // is recorded on the usernames document so sign-in can find it again.
+        if (await isUsernameTaken(name)) { setError('That username is already taken.'); return; }
         const authEmail = mintAuthEmail();
         const cred = await createUserWithEmailAndPassword(auth, authEmail, password);
         await Promise.all([
-          setDoc(doc(db, COL.usernames, name), {
-            uid: cred.user.uid,
-            authEmail,
-            createdAt: serverTimestamp()
-          }),
+          setDoc(doc(db, COL.usernames, name), { uid: cred.user.uid, authEmail, createdAt: serverTimestamp() }),
           setDoc(doc(db, COL.accounts, cred.user.uid), {
             username: username.trim(),
             usernameLower: name,
@@ -72,180 +56,127 @@ export default function AuthPage() {
             createdAt: serverTimestamp()
           }),
           setDoc(doc(db, COL.wallets, cred.user.uid), {
-            balance: 0,
-            lastSettledEntryId: '',
-            lastRedemptionId: '',
-            updatedAt: serverTimestamp()
+            balance: 0, lastSettledEntryId: '', lastRedemptionId: '', updatedAt: serverTimestamp()
           })
         ]);
       } else {
         const authEmail = await resolveAuthEmail(name);
-        if (!authEmail) {
-          setError('Your username or password is incorrect.');
-          return;
-        }
+        if (!authEmail) { setError('Your username or password is incorrect.'); return; }
         await signInWithEmailAndPassword(auth, authEmail, password);
       }
     } catch (err) {
-      setError(friendly(err, mode));
+      setError(friendly(err));
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <>
-      <StarField running={particles} />
+    <div className="auth">
+      <aside className="auth-side">
+        <span className="auth-orb a" />
+        <span className="auth-orb b" />
 
-      <div className="auth-page">
-        <aside className="auth-art">
-          <div className="brand">
-            <span><Sparkles size={20} /></span>
-            <div><span>MEMES</span></div>
+        <div className="row" style={{ position: 'relative', fontWeight: 700, gap: 9 }}>
+          <span className="brand-mark" style={{ background: 'rgba(255,255,255,.18)', color: '#fff' }}>
+            <Sparkles size={16} />
+          </span>
+          Astral Memes
+        </div>
+
+        <div>
+          <h1>Good games. Better company.</h1>
+          <p>A quieter corner of the internet — play something new, share something funny, find your people.</p>
+          <div className="auth-points">
+            {POINTS.map(({ icon: Icon, text }) => (
+              <span key={text}><Icon size={16} /> {text}</span>
+            ))}
           </div>
+        </div>
 
-          <div className="auth-moon">
-            <div className="planet" />
-            <i className="ring one" />
-            <i className="ring two" />
-            <span className="star s1">✦</span>
-            <span className="star s2">✧</span>
-            <span className="star s3">✦</span>
-          </div>
+        <p className="auth-foot">Made for connection.</p>
+      </aside>
 
-          <div className="auth-copy">
-            <span className="eyebrow">A LITTLE SPACE FOR YOURSELF</span>
-            <h1>Good games.<br />Better company.</h1>
-            <p>
-              Play something new. Share something funny.
-              <br className="desktop" />
-              Find your people in a universe of your own.
-            </p>
-            <div className="auth-features">
-              {FEATURES.map(({ icon: Icon, text }) => (
-                <span key={text}><Icon size={16} /> {text}</span>
-              ))}
-            </div>
-          </div>
-
-          <footer>
-            <span>Astral Memes</span>
-            <span>Made for connection. ✦</span>
-          </footer>
-        </aside>
-
-        <section className="auth-form-area">
-          <div className="auth-motion">
+      <section className="auth-panel">
+        <div className="auth-card">
+          <div className="spread">
+            <span className="eyebrow" style={{ margin: 0 }}>Welcome to Astral</span>
             <button
-              className="motion-control"
-              onClick={() => setParticles((v) => !v)}
+              className="btn btn-ghost btn-icon"
+              onClick={toggle}
+              aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
               type="button"
-              aria-pressed={particles}
             >
-              <Sparkles size={15} />
-              <span>Particles</span>
-              {particles ? <Pause size={13} /> : <Play size={13} />}
+              {isDark ? <Sun size={16} /> : <Moon size={16} />}
             </button>
           </div>
 
-          <div className="auth-mobile-brand">
-            <div className="brand">
-              <span><Sparkles size={18} /></span>
-              <div><span>MEMES</span></div>
-            </div>
-          </div>
-
-          <div className="auth-form">
-            <span className="auth-symbol"><Sparkles size={22} /></span>
-            <span className="eyebrow">WELCOME TO ASTRAL</span>
-            <h2>{mode === 'signin' ? 'Welcome back.' : 'A fresh start.'}</h2>
-            <p>
+          <div>
+            <h1 style={{ fontSize: '1.6rem' }}>
+              {mode === 'signin' ? 'Welcome back.' : 'Make yourself at home.'}
+            </h1>
+            <p className="muted" style={{ marginTop: 6 }}>
               {mode === 'signin'
                 ? 'Sign in to pick up where you left off.'
-                : 'Create your account and make yourself at home.'}
+                : 'Pick a username and a password. That’s it.'}
             </p>
-
-            <div className="auth-tabs">
-              <button
-                type="button"
-                className={mode === 'signin' ? 'active' : ''}
-                onClick={() => switchMode('signin')}
-              >
-                Sign in
-              </button>
-              <button
-                type="button"
-                className={mode === 'signup' ? 'active' : ''}
-                onClick={() => switchMode('signup')}
-              >
-                Create account
-              </button>
-            </div>
-
-            <form onSubmit={submit}>
-              <label>
-                Username
-                <input
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter your username"
-                  autoComplete="username"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  required
-                />
-              </label>
-
-              <div className="field">
-                <label>Password</label>
-                <div className="password-field">
-                  <input
-                    type={show ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShow((v) => !v)}
-                    aria-label={show ? 'Hide password' : 'Show password'}
-                  >
-                    {show ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              {error && <p className="form-error">{error}</p>}
-
-              <button className="primary full" type="submit" disabled={busy}>
-                <LogIn size={16} />
-                {busy ? 'Working…' : mode === 'signin' ? 'Sign in' : 'Create account'}
-              </button>
-            </form>
-
-            <p className="auth-switch">
-              {owner ? 'Back to the community? ' : 'Managing the community? '}
-              <button type="button" onClick={() => setOwner((v) => !v)}>
-                {owner ? 'Community sign in' : 'Owner sign in'}
-              </button>
-            </p>
-
-            <div className="auth-note">
-              <Info size={15} />
-              <span>Your space. Your community. Welcome to Astral.</span>
-            </div>
           </div>
 
-          <div className="auth-foot">A quieter corner of the internet.</div>
-        </section>
-      </div>
-    </>
+          <Tabs
+            value={mode}
+            onChange={(v) => { setMode(v); setError(''); }}
+            options={[{ value: 'signin', label: 'Sign in' }, { value: 'signup', label: 'Create account' }]}
+          />
+
+          <form onSubmit={submit}>
+            <Field label="Username">
+              <input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="zentraa"
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                required
+              />
+            </Field>
+
+            <Field label="Password" hint={mode === 'signup' ? 'At least 8 characters' : undefined}>
+              <span className="input-affix">
+                <input
+                  type={show ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                  required
+                />
+                <button type="button" onClick={() => setShow((v) => !v)} aria-label={show ? 'Hide password' : 'Show password'}>
+                  {show ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </span>
+            </Field>
+
+            <ErrorNote>{error}</ErrorNote>
+
+            <button className="btn btn-primary btn-full" type="submit" disabled={busy}>
+              {busy ? 'Working…' : mode === 'signin' ? 'Sign in' : 'Create account'}
+            </button>
+          </form>
+
+          <p className="auth-switch">
+            {mode === 'signin' ? 'New here? ' : 'Already have an account? '}
+            <button type="button" onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); }}>
+              {mode === 'signin' ? 'Create an account' : 'Sign in'}
+            </button>
+          </p>
+        </div>
+      </section>
+    </div>
   );
 }
 
-function friendly(err, mode) {
+function friendly(err) {
   const code = String(err?.code || '');
   if (code.includes('user-not-found') || code.includes('wrong-password') || code.includes('invalid-credential')) {
     return 'Your username or password is incorrect.';

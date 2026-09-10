@@ -1,14 +1,23 @@
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
 
-export function SectionTitle({ eyebrow, title, actions }) {
+export function PageHead({ eyebrow, title, actions }) {
   return (
-    <div className="section-title">
+    <header className="page-head spread">
       <div>
         {eyebrow && <span className="eyebrow">{eyebrow}</span>}
-        <h2 className="heading">{title}</h2>
+        <h1>{title}</h1>
       </div>
-      {actions && <div className="store-heading-actions">{actions}</div>}
+      {actions && <div className="wrap">{actions}</div>}
+    </header>
+  );
+}
+
+export function SectionHead({ title, actions }) {
+  return (
+    <div className="spread" style={{ marginBottom: 12 }}>
+      <h2>{title}</h2>
+      {actions && <div className="wrap">{actions}</div>}
     </div>
   );
 }
@@ -16,7 +25,7 @@ export function SectionTitle({ eyebrow, title, actions }) {
 export function Empty({ icon: Icon, title, body, children }) {
   return (
     <div className="empty">
-      {Icon && <span className="empty-icon"><Icon size={22} /></span>}
+      {Icon && <span className="empty-icon"><Icon size={20} /></span>}
       <strong>{title}</strong>
       {body && <span>{body}</span>}
       {children}
@@ -26,8 +35,8 @@ export function Empty({ icon: Icon, title, body, children }) {
 
 export function Loader({ label = 'Loading…' }) {
   return (
-    <div className="state-page">
-      <div className="loader" />
+    <div className="state">
+      <div className="spinner" />
       <span>{label}</span>
     </div>
   );
@@ -35,7 +44,39 @@ export function Loader({ label = 'Loading…' }) {
 
 export function ErrorNote({ children }) {
   if (!children) return null;
-  return <p className="form-error">{children}</p>;
+  return <p className="error" role="alert">{children}</p>;
+}
+
+export function Field({ label, hint, children }) {
+  return (
+    <label className="field">
+      {label && <span>{label}</span>}
+      {children}
+      {hint && <span className="hint">{hint}</span>}
+    </label>
+  );
+}
+
+export function Tabs({ value, onChange, options }) {
+  return (
+    <div className="tabs" role="tablist">
+      {options.map((o) => {
+        const val = typeof o === 'string' ? o : o.value;
+        const label = typeof o === 'string' ? o : o.label;
+        return (
+          <button
+            key={val}
+            role="tab"
+            aria-selected={value === val}
+            onClick={() => onChange(val)}
+            type="button"
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 export function Modal({ title, onClose, children, footer }) {
@@ -47,24 +88,21 @@ export function Modal({ title, onClose, children, footer }) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog">
-        <div className="section-title">
-          <h2 className="heading">{title}</h2>
-          <button className="icon-btn" onClick={onClose} aria-label="Close"><X size={18} /></button>
+      <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div className="modal-head">
+          <h2>{title}</h2>
+          <button className="btn btn-ghost btn-icon" onClick={onClose} aria-label="Close">
+            <X size={17} />
+          </button>
         </div>
         <div className="modal-body">{children}</div>
-        {footer && <div className="game-actions">{footer}</div>}
+        {footer && <div className="modal-foot">{footer}</div>}
       </div>
     </div>
   );
 }
 
-export function Field({ label, hint, children }) {
-  return (
-    <label className="field">
-      <span className="chat-label">{label}</span>
-      {children}
-      {hint && <small className="permission-hint">{hint}</small>}
-    </label>
-  );
+export function Toast({ children }) {
+  if (!children) return null;
+  return <div className="toast" role="status">{children}</div>;
 }

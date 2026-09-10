@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { Globe, ShieldAlert } from 'lucide-react';
 import { useSession } from '../lib/session';
-import { SectionTitle, Empty, Field } from '../components/ui';
+import { PageHead, Empty, Field } from '../components/ui';
 
 // The proxy stack (Ultraviolet + Bare-Mux + Epoxy) is served as static files
-// under /proxy and is carried over from the original deploy untouched.
+// under /proxy, carried over from the original deploy untouched.
 const PROXY_ENTRY = '/proxy/duckduckgo-browser-v3.html';
 
 export default function BrowserPage() {
   const { can, isOwner } = useSession();
-  const [tabName, setTabName] = useState(document.title);
+  const [tabName, setTabName] = useState('');
   const [tabIcon, setTabIcon] = useState('');
   const [open, setOpen] = useState(false);
 
@@ -19,8 +19,8 @@ export default function BrowserPage() {
     return (
       <Empty
         icon={Globe}
-        title="Astral private browser"
-        body="This is an early-access feature. Ask an Owner for access."
+        title="Private browser is locked"
+        body="This is an early-access feature. Ask an Owner for the Astral role."
       />
     );
   }
@@ -40,35 +40,42 @@ export default function BrowserPage() {
   };
 
   return (
-    <div className="browser-page">
-      <SectionTitle eyebrow="A LITTLE SPACE FOR YOURSELF" title="Private browser" />
+    <div className="stack">
+      <PageHead eyebrow="A little space for yourself" title="Private browser" />
 
-      <p className="browser-notice">
-        <ShieldAlert size={15} />
-        Only visit sites you trust. Activity may pass through the proxy transport provider.
-      </p>
+      <div className="card">
+        <p className="row muted" style={{ marginBottom: 14 }}>
+          <ShieldAlert size={15} />
+          Only visit sites you trust. Traffic passes through the proxy transport provider.
+        </p>
 
-      <div className="form-grid community-card">
-        <Field label="Custom tab name">
-          <input value={tabName} onChange={(e) => setTabName(e.target.value)} placeholder="Astral Memes" />
-        </Field>
-        <Field label="Tab icon URL" hint="Tab icon preview updates immediately.">
-          <input value={tabIcon} onChange={(e) => setTabIcon(e.target.value)} placeholder="https://…/favicon.ico" />
-        </Field>
-        <button className="secondary" onClick={applyCloak}>Apply</button>
+        <div className="stack" style={{ gap: 12 }}>
+          <Field label="Tab name" hint="Changes what this tab is called.">
+            <input value={tabName} onChange={(e) => setTabName(e.target.value)} placeholder="Astral Memes" />
+          </Field>
+          <Field label="Tab icon URL">
+            <input value={tabIcon} onChange={(e) => setTabIcon(e.target.value)} placeholder="https://…/favicon.ico" />
+          </Field>
+          <div className="row">
+            <button className="btn" onClick={applyCloak} disabled={!tabName.trim() && !tabIcon.trim()}>
+              Apply
+            </button>
+            {!open && (
+              <button className="btn btn-primary" onClick={() => setOpen(true)}>
+                <Globe size={15} /> Open browser
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
-      {open ? (
+      {open && (
         <iframe
-          className="astral-browser-frame"
+          className="frame"
           src={PROXY_ENTRY}
-          title="Astral private browser"
+          title="Private browser"
           allow="clipboard-read; clipboard-write; fullscreen"
         />
-      ) : (
-        <button className="primary" onClick={() => setOpen(true)}>
-          <Globe size={16} /> Open the browser
-        </button>
       )}
     </div>
   );
