@@ -26,6 +26,15 @@ export const UPLOAD = {
   maxBytes: 2097152
 };
 
+// Usernames that are granted Owner the moment they are created. Usernames are
+// claimed atomically by document id in the `usernames` collection, so only one
+// account can ever hold a given name.
+export const OWNER_USERNAMES = ['zentraa'];
+
+export function isOwnerUsername(username) {
+  return OWNER_USERNAMES.includes(String(username || '').trim().toLowerCase());
+}
+
 // Permission flags stored on role documents.
 export const PERMISSIONS = [
   { key: 'accessAdmin', label: 'Access admin dashboard' },

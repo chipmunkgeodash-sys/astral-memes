@@ -6,7 +6,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
-import { COL, LIMITS } from '../lib/schema';
+import { COL, LIMITS, isOwnerUsername } from '../lib/schema';
 import { isValidUsername, isUsernameTaken, claimUsername, usernameToEmail, normalize } from '../lib/usernames';
 import { ErrorNote } from '../components/ui';
 
@@ -53,7 +53,7 @@ export default function AuthPage() {
             username: name,
             displayName: username.trim(),
             bio: '',
-            owner: false,
+            owner: isOwnerUsername(name),
             roles: [],
             createdAt: serverTimestamp()
           }),

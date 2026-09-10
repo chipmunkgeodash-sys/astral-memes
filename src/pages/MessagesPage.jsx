@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Send, Hash, MessageCircle, Trash2 } from 'lucide-react';
 import {
-  collection, onSnapshot, query, orderBy, where, addDoc, deleteDoc,
+  collection, onSnapshot, query, where, addDoc, deleteDoc,
   doc, serverTimestamp, limit
 } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -14,6 +14,10 @@ const LOUNGE = 'the-lounge';
 
 // A DM thread id is both uids sorted, so either side computes the same key.
 const threadId = (a, b) => [a, b].sort().join('__');
+
+// serverTimestamp() is null on the local echo before the write lands, so treat
+// a missing value as "now" to keep an optimistic message pinned to the bottom.
+const millis = (ts) => (ts && typeof ts.toMillis === 'function' ? ts.toMillis() : Date.now());
 
 export default function MessagesPage() {
   const { user, profile, isOwner, can } = useSession();
@@ -33,14 +37,16 @@ export default function MessagesPage() {
 
   useEffect(() => {
     setMessages(null);
+    // Deliberately no orderBy: combining it with the `thread` equality filter
+    // would require a composite index, and this project has none. Sorting a
+    // capped page client-side avoids that entirely.
     return onSnapshot(
-      query(
-        collection(db, COL.messages),
-        where('thread', '==', thread),
-        orderBy('createdAt', 'asc'),
-        limit(300)
-      ),
-      (snap) => setMessages(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+      query(collection(db, COL.messages), where('thread', '==', thread), limit(300)),
+      (snap) => {
+        const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        rows.sort((a, b) => millis(a.createdAt) - millis(b.createdAt));
+        setMessages(rows);
+      },
       (err) => { setError(err.message); setMessages([]); }
     );
   }, [thread]);

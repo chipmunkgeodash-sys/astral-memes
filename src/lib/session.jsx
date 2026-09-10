@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, onSnapshot, collection, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot, collection } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { COL, hasPermission } from './schema';
 
@@ -22,17 +22,13 @@ export function SessionProvider({ children }) {
   // Live account document.
   useEffect(() => {
     if (!user) return undefined;
-    return onSnapshot(doc(db, COL.accounts, user.uid), async (snap) => {
-      if (snap.exists()) { setProfile({ id: snap.id, ...snap.data() }); return; }
-      // First sign-in for this uid: create the account row.
-      await setDoc(doc(db, COL.accounts, user.uid), {
-        displayName: user.displayName || 'Astral member',
-        bio: '',
-        owner: false,
-        roles: [],
-        createdAt: serverTimestamp()
-      }, { merge: true });
-    }, () => setProfile(null));
+    // Read only. Sign-up owns document creation; creating one here too raced it
+    // and could overwrite the real display name with a placeholder.
+    return onSnapshot(
+      doc(db, COL.accounts, user.uid),
+      (snap) => setProfile(snap.exists() ? { id: snap.id, ...snap.data() } : null),
+      () => setProfile(null)
+    );
   }, [user]);
 
   // Live wallet document (coin balances).
