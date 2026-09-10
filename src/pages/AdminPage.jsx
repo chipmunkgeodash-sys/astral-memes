@@ -145,7 +145,7 @@ function Members() {
 
 // Owner-only: adjust any member's balance up or down, with an audit row.
 function GrantCoins({ account, current, onClose }) {
-  const { user } = useSession();
+  const { accountId } = useSession();
   const [amount, setAmount] = useState(100);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
@@ -173,7 +173,7 @@ function GrantCoins({ account, current, onClose }) {
         displayName: account.displayName || null,
         amount: n,
         note: note.trim() || null,
-        grantedBy: user?.uid || null,
+        grantedBy: accountId || null,
         createdAt: serverTimestamp()
       });
       onClose();

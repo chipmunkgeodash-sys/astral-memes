@@ -11,7 +11,7 @@ import { PageHead, Empty, Loader, ErrorNote, Field, UserLink } from '../componen
 import Avatar from '../components/Avatar';
 
 export default function FeedPage() {
-  const { user, profile, can, isOwner } = useSession();
+  const { accountId, profile, can, isOwner } = useSession();
   const [posts, setPosts] = useState(null);
   const [text, setText] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -29,7 +29,7 @@ export default function FeedPage() {
     setBusy(true); setError('');
     try {
       await addDoc(collection(db, COL.posts), {
-        uid: user.uid,
+        uid: accountId,
         displayName: profile?.displayName || 'Astral member',
         text: text.trim(),
         imageUrl: imageUrl.trim() || null,
@@ -41,10 +41,10 @@ export default function FeedPage() {
   };
 
   const toggleLike = async (post) => {
-    const liked = (post.likes || []).includes(user.uid);
+    const liked = (post.likes || []).includes(accountId);
     try {
       await updateDoc(doc(db, COL.posts, post.id), {
-        likes: liked ? arrayRemove(user.uid) : arrayUnion(user.uid)
+        likes: liked ? arrayRemove(accountId) : arrayUnion(accountId)
       });
     } catch (err) { setError(err.message); }
   };
@@ -87,8 +87,8 @@ export default function FeedPage() {
       ) : (
         <div className="list">
           {posts.map((p) => {
-            const liked = (p.likes || []).includes(user.uid);
-            const canDelete = p.uid === user.uid || isOwner || can('moderateMemes');
+            const liked = (p.likes || []).includes(accountId);
+            const canDelete = p.uid === accountId || isOwner || can('moderateMemes');
             return (
               <article key={p.id} className="card">
                 <header className="row">

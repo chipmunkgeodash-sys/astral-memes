@@ -10,7 +10,7 @@ import { useSession } from '../lib/session';
 import { PageHead, Empty, Loader, Modal, Field, ErrorNote } from '../components/ui';
 
 export default function PollsPage() {
-  const { user, isOwner } = useSession();
+  const { accountId, isOwner } = useSession();
   const [polls, setPolls] = useState(null);
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
@@ -24,7 +24,7 @@ export default function PollsPage() {
   const castVote = async (poll, index) => {
     if (poll.closed) return;
     try {
-      await updateDoc(doc(db, COL.polls, poll.id), { [`votes.${user.uid}`]: index });
+      await updateDoc(doc(db, COL.polls, poll.id), { [`votes.${accountId}`]: index });
     } catch (err) { setError(err.message); }
   };
 
@@ -51,7 +51,7 @@ export default function PollsPage() {
           {polls.map((p) => {
             const votes = p.votes || {};
             const total = Object.keys(votes).length;
-            const mine = votes[user.uid];
+            const mine = votes[accountId];
             const revealed = p.closed || mine !== undefined;
             return (
               <article key={p.id} className="card">

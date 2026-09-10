@@ -8,7 +8,7 @@ import { PageHead, SectionHead, Field, ErrorNote, Toast } from '../components/ui
 import Avatar from '../components/Avatar';
 
 export default function ProfilePage() {
-  const { user, profile, balance, roles, isOwner } = useSession();
+  const { accountId, profile, balance, roles, isOwner } = useSession();
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
   const [picture, setPicture] = useState('');
@@ -25,19 +25,19 @@ export default function ProfilePage() {
   }, [profile?.id]);
 
   useEffect(() => {
-    if (!user) return undefined;
+    if (!accountId) return undefined;
     return onSnapshot(
-      query(collection(db, COL.posts), where('uid', '==', user.uid)),
+      query(collection(db, COL.posts), where('uid', '==', accountId)),
       (snap) => setPostCount(snap.size),
       () => setPostCount(0)
     );
-  }, [user?.uid]);
+  }, [accountId]);
 
   const save = async () => {
     if (!displayName.trim()) { setError('Add a display name.'); return; }
     setBusy(true); setError(''); setSaved(false);
     try {
-      await updateDoc(doc(db, COL.accounts, user.uid), {
+      await updateDoc(doc(db, COL.accounts, accountId), {
         displayName: displayName.trim(),
         bio: bio.trim(),
         picture: picture.trim() || ''

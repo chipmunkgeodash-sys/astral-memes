@@ -10,7 +10,7 @@ import { useSession } from '../lib/session';
 import { PageHead, SectionHead, Empty, Loader, Modal, Field, ErrorNote } from '../components/ui';
 
 export default function StorePage() {
-  const { user, profile, balance, isOwner } = useSession();
+  const { accountId, profile, balance, isOwner } = useSession();
   const [items, setItems] = useState(null);
   const [history, setHistory] = useState([]);
   const [open, setOpen] = useState(false);
@@ -24,13 +24,13 @@ export default function StorePage() {
   ), []);
 
   useEffect(() => {
-    if (!user) return undefined;
+    if (!accountId) return undefined;
     return onSnapshot(
-      query(collection(db, COL.redemptions), where('uid', '==', user.uid)),
+      query(collection(db, COL.redemptions), where('uid', '==', accountId)),
       (snap) => setHistory(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
       () => setHistory([])
     );
-  }, [user?.uid]);
+  }, [accountId]);
 
   const redeem = async (item) => {
     if (balance < item.cost) { setError('You need more Astral Coins for this reward.'); return; }
@@ -38,14 +38,14 @@ export default function StorePage() {
     try {
       const entry = await addDoc(collection(db, COL.redemptions), {
         type: 'reward',
-        uid: user.uid,
+        uid: accountId,
         displayName: profile?.displayName || null,
         itemId: item.id,
         itemTitle: item.title,
         amount: -item.cost,
         createdAt: serverTimestamp()
       });
-      await updateDoc(doc(db, COL.wallets, user.uid), {
+      await updateDoc(doc(db, COL.wallets, accountId), {
         balance: increment(-item.cost),
         lastRedemptionId: entry.id,
         updatedAt: serverTimestamp()

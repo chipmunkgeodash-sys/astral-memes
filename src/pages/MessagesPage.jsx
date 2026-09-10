@@ -18,7 +18,7 @@ const threadId = (a, b) => [a, b].sort().join('__');
 const millis = (ts) => (ts && typeof ts.toMillis === 'function' ? ts.toMillis() : Date.now());
 
 export default function MessagesPage() {
-  const { user, profile, isOwner, can } = useSession();
+  const { accountId, profile, isOwner, can } = useSession();
   const [accounts, setAccounts] = useState([]);
   const [active, setActive] = useState(LOUNGE);
   const [messages, setMessages] = useState(null);
@@ -28,11 +28,11 @@ export default function MessagesPage() {
 
   useEffect(() => onSnapshot(
     collection(db, COL.accounts),
-    (snap) => setAccounts(snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((a) => a.id !== user?.uid)),
+    (snap) => setAccounts(snap.docs.map((d) => ({ id: d.id, ...d.data() })).filter((a) => a.id !== accountId)),
     () => setAccounts([])
-  ), [user?.uid]);
+  ), [accountId]);
 
-  const thread = active === LOUNGE ? LOUNGE : threadId(user.uid, active);
+  const thread = active === LOUNGE ? LOUNGE : threadId(accountId, active);
 
   useEffect(() => {
     setMessages(null);
@@ -59,7 +59,7 @@ export default function MessagesPage() {
     try {
       await addDoc(collection(db, COL.messages), {
         thread,
-        uid: user.uid,
+        uid: accountId,
         displayName: profile?.displayName || 'Astral member',
         text: body,
         createdAt: serverTimestamp()
@@ -68,7 +68,7 @@ export default function MessagesPage() {
   };
 
   const partner = useMemo(() => accounts.find((a) => a.id === active), [accounts, active]);
-  const canDelete = (m) => m.uid === user.uid || isOwner || can('deleteMessages') || can('moderateMemes');
+  const canDelete = (m) => m.uid === accountId || isOwner || can('deleteMessages') || can('moderateMemes');
 
   return (
     <div className="stack">
@@ -110,8 +110,8 @@ export default function MessagesPage() {
               <Empty icon={MessageCircle} title="All quiet here." body="Say something first." />
             ) : (
               messages.map((m) => (
-                <div key={m.id} className={m.uid === user.uid ? 'bubble mine' : 'bubble'}>
-                  {m.uid !== user.uid && <strong><UserLink to={m.uid}>{m.displayName || 'Astral member'}</UserLink></strong>}
+                <div key={m.id} className={m.uid === accountId ? 'bubble mine' : 'bubble'}>
+                  {m.uid !== accountId && <strong><UserLink to={m.uid}>{m.displayName || 'Astral member'}</UserLink></strong>}
                   {m.text}
                   {canDelete(m) && (
                     <button

@@ -11,7 +11,7 @@ import Avatar from '../components/Avatar';
 
 // /u/<username> — a member's public profile.
 export default function UserPage({ router }) {
-  const { user, roles } = useSession();
+  const { accountId, roles } = useSession();
   const handle = decodeURIComponent(router.segments[1] || '').toLowerCase();
 
   const [profile, setProfile] = useState(undefined); // undefined = loading, null = not found
@@ -71,7 +71,7 @@ export default function UserPage({ router }) {
     );
   }
 
-  const isMe = profile.id === user?.uid;
+  const isMe = profile.id === accountId;
   const myRoles = roles.filter((r) => (profile.roleIds || []).includes(r.id));
   const isOwner = (profile.roleIds || []).includes('owner');
 

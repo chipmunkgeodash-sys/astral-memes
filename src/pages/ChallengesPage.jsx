@@ -11,7 +11,7 @@ import { PageHead, Empty, Loader, Modal, Field, ErrorNote, Tabs, UserLink } from
 import Avatar from '../components/Avatar';
 
 export default function ChallengesPage() {
-  const { user, profile, isOwner } = useSession();
+  const { accountId, profile, isOwner } = useSession();
   const [challenges, setChallenges] = useState(null);
   const [entries, setEntries] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -45,17 +45,17 @@ export default function ChallengesPage() {
     () => [...entries].sort((a, b) => (b.points || 0) - (a.points || 0)),
     [entries]
   );
-  const mine = ranked.find((e) => e.uid === user?.uid);
+  const mine = ranked.find((e) => e.uid === accountId);
   const ended = isEnded(selected);
   const winner = ended ? ranked[0] : null;
 
   const join = async () => {
-    if (!selected || !user) return;
+    if (!selected || !accountId) return;
     setBusy('join'); setError('');
     try {
-      await setDoc(doc(db, COL.challengeEntries, `${selected.id}_${user.uid}`), {
+      await setDoc(doc(db, COL.challengeEntries, `${selected.id}_${accountId}`), {
         challengeId: selected.id,
-        uid: user.uid,
+        uid: accountId,
         displayName: profile?.displayName || 'Astral member',
         points: selected.forever ? LIMITS.foreverRefillPoints : 0,
         joinedAt: serverTimestamp()
@@ -169,7 +169,7 @@ export default function ChallengesPage() {
                 ) : (
                   <div className="list">
                     {ranked.map((e, i) => (
-                      <div key={e.id} className={e.uid === user?.uid ? 'row-item is-me' : 'row-item'}>
+                      <div key={e.id} className={e.uid === accountId ? 'row-item is-me' : 'row-item'}>
                         <span className={i === 0 ? 'rank rank-1' : 'rank'}>{i + 1}</span>
                         <Avatar profile={{ id: e.uid, displayName: e.displayName }} size={30} />
                         <UserLink to={e.uid} className="grow truncate">{e.displayName || 'Astral member'}</UserLink>
