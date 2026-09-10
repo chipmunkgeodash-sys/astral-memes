@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <title>Astral Browser &middot; DuckDuckGo</title>
+    <link rel="stylesheet" href="/proxy/browser.css" />
+    <script src="/proxy/baremux/index.js"></script>
+    <script src="/proxy/uv/uv.bundle.js"></script>
+    <script src="/proxy/uv-ddg-v3.config.js"></script>
+  </head>
+  <body>
+    <div class="locked" id="locked">
+      <span>ASTRAL ACCESS</span>
+      <h1>Verifying your membership&hellip;</h1>
+    </div>
+    <main id="browser" hidden>
+      <form id="address-form">
+        <button type="button" id="home" title="DuckDuckGo home" aria-label="DuckDuckGo home">&#9680;</button>
+        <span class="engine-badge" aria-label="Search provider">DuckDuckGo</span>
+        <input id="address" autocomplete="off" spellcheck="false" placeholder="Search DuckDuckGo or enter an address" aria-label="Search DuckDuckGo or enter an address" />
+        <button type="submit">Go</button>
+      </form>
+      <section id="start">
+        <div class="orb"></div>
+        <span>ASTRAL EXCLUSIVE</span>
+        <h1>Explore another orbit.</h1>
+        <p>Search privately with DuckDuckGo or enter a complete address above.</p>
+        <small>Private browsing powered by Ultraviolet and an encrypted Epoxy transport.</small>
+      </section>
+      <iframe id="view" title="Astral private browser" allow="fullscreen; autoplay; clipboard-read; clipboard-write" hidden></iframe>
+      <div id="status" role="status"></div>
+      <footer>
+        <span>Search provider: DuckDuckGo &middot; Only visit sites you trust.</span>
+        <a href="https://github.com/titaniumnetwork-dev/Ultraviolet" target="_blank" rel="noreferrer">Ultraviolet source &amp; license</a>
+      </footer>
+    </main>
+    <script src="/proxy/duckduckgo-v3.js"></script>
+  </body>
+</html>

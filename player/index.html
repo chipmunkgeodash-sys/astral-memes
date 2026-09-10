@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Astral Game Player</title>
+    <style>
+      html, body { width: 100%; height: 100%; margin: 0; background: #06080d; color: #cbd3e1; font: 14px system-ui; }
+      body { display: grid; place-items: center; }
+    </style>
+  </head>
+  <body>
+    <p>Preparing game…</p>
+    <script>
+      addEventListener('message', function (event) {
+        var allowed = event.origin === 'https://astral-memes.web.app' || event.origin === 'https://astral-memes-zentraa.web.app' || /^http:\/\/localhost:\d+$/.test(event.origin);
+        if (!allowed || !event.data || event.data.type !== 'astral-game' || typeof event.data.html !== 'string') return;
+        var controller = '<script src="https://astral-memes-zentraa.web.app/controller.js?v=4"><\/script>';
+        var html = event.data.html;
+        html = /<\/body\s*>/i.test(html)
+          ? html.replace(/<\/body\s*>/i, controller + '</body>')
+          : html + controller;
+        document.open(); document.write(html); document.close();
+      });
+      parent.postMessage({ type: 'astral-player-ready' }, '*');
+    </script>
+  </body>
+</html>
