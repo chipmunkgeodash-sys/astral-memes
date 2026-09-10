@@ -76,10 +76,10 @@ function Members() {
   }, [accounts, term]);
 
   const toggleRole = async (account, roleId) => {
-    const next = new Set(account.roles || []);
+    const next = new Set(account.roleIds || []);
     if (next.has(roleId)) next.delete(roleId); else next.add(roleId);
     try {
-      await updateDoc(doc(db, COL.accounts, account.id), { roles: [...next] });
+      await updateDoc(doc(db, COL.accounts, account.id), { roleIds: [...next] });
     } catch (err) { setError(err.message); }
   };
 
@@ -115,21 +115,21 @@ function Members() {
               </span>
 
               <span className="wallet-pill" title="Astral Coins">
-                <Coins size={14} /> {(wallets[a.id]?.coins ?? 0).toLocaleString()}
+                <Coins size={14} /> {(wallets[a.id]?.balance ?? 0).toLocaleString()}
               </span>
 
-              {a.owner && <span className="badge star">Owner</span>}
+              {(a.roleIds || []).includes("owner") && <span className="badge star">Owner</span>}
 
               {isOwner && (
                 <span className="account-role">
                   {roles.map((r) => (
                     <button
                       key={r.id}
-                      className={(a.roles || []).includes(r.id) ? 'badge selected' : 'badge'}
+                      className={(a.roleIds || []).includes(r.id) ? 'badge selected' : 'badge'}
                       onClick={() => toggleRole(a, r.id)}
                       title={r.name}
                     >
-                      {(a.roles || []).includes(r.id) && <Check size={11} />} {r.name}
+                      {(a.roleIds || []).includes(r.id) && <Check size={11} />} {r.name}
                     </button>
                   ))}
                 </span>
@@ -148,7 +148,7 @@ function Members() {
       {granting && (
         <GrantCoins
           account={granting}
-          current={wallets[granting.id]?.coins ?? 0}
+          current={wallets[granting.id]?.balance ?? 0}
           onClose={() => setGranting(null)}
         />
       )}
@@ -174,8 +174,8 @@ function GrantCoins({ account, current, onClose }) {
       const ref = doc(db, COL.wallets, account.id);
       // The wallet may not exist yet for an older account, so create it if absent.
       const snap = await getDoc(ref);
-      if (snap.exists()) await updateDoc(ref, { coins: increment(n) });
-      else await setDoc(ref, { coins: Math.max(0, n), banked: 0 });
+      if (snap.exists()) await updateDoc(ref, { balance: increment(n), updatedAt: serverTimestamp() });
+      else await setDoc(ref, { balance: Math.max(0, n), lastSettledEntryId: '', lastRedemptionId: '', updatedAt: serverTimestamp() });
 
       // Keep an audit trail of Owner grants.
       await addDoc(collection(db, COL.redemptions), {

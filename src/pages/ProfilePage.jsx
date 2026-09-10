@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Coins, Trophy, Rss } from 'lucide-react';
+import { Save, Coins, Rss } from 'lucide-react';
 import { doc, updateDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { COL } from '../lib/schema';
@@ -8,10 +8,10 @@ import { SectionTitle, Field, ErrorNote } from '../components/ui';
 import Avatar from '../components/Avatar';
 
 export default function ProfilePage() {
-  const { user, profile, wallet, roles, isOwner } = useSession();
+  const { user, profile, balance, roles, isOwner } = useSession();
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
-  const [photoURL, setPhotoURL] = useState('');
+  const [picture, setPicture] = useState('');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -21,7 +21,7 @@ export default function ProfilePage() {
     if (!profile) return;
     setDisplayName(profile.displayName || '');
     setBio(profile.bio || '');
-    setPhotoURL(profile.photoURL || '');
+    setPicture(profile.picture || '');
   }, [profile?.id]);
 
   useEffect(() => {
@@ -40,21 +40,21 @@ export default function ProfilePage() {
       await updateDoc(doc(db, COL.accounts, user.uid), {
         displayName: displayName.trim(),
         bio: bio.trim(),
-        photoURL: photoURL.trim() || null
+        picture: picture.trim() || null
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (err) { setError(err.message); } finally { setBusy(false); }
   };
 
-  const myRoles = roles.filter((r) => (profile?.roles || []).includes(r.id));
+  const myRoles = roles.filter((r) => (profile?.roleIds || []).includes(r.id));
 
   return (
     <div className="profile-info">
       <SectionTitle eyebrow="YOUR SPACE" title="My profile" />
 
       <div className="profile-cover community-card">
-        <Avatar profile={{ ...profile, photoURL }} size={72} />
+        <Avatar profile={{ ...profile, picture }} size={72} />
         <div>
           <h2 className="heading">{displayName || 'Astral member'}</h2>
           {profile?.username && <small>@{profile.username}</small>}
@@ -67,8 +67,7 @@ export default function ProfilePage() {
       </div>
 
       <div className="profile-numbers">
-        <span className="wallet-pill"><Coins size={15} /> {(wallet?.coins ?? 0).toLocaleString()} coins</span>
-        <span className="wallet-pill"><Trophy size={15} /> {(wallet?.banked ?? 0).toLocaleString()} banked</span>
+        <span className="wallet-pill"><Coins size={15} /> {balance.toLocaleString()} Astral Coins</span>
         <span className="wallet-pill"><Rss size={15} /> {postCount} posts shared</span>
       </div>
 
@@ -81,7 +80,7 @@ export default function ProfilePage() {
           <textarea rows={3} value={bio} onChange={(e) => setBio(e.target.value)} />
         </Field>
         <Field label="Picture URL" hint="Add a picture and introduce yourself.">
-          <input value={photoURL} onChange={(e) => setPhotoURL(e.target.value)} placeholder="https://…" />
+          <input value={picture} onChange={(e) => setPicture(e.target.value)} placeholder="https://…" />
         </Field>
         <ErrorNote>{error}</ErrorNote>
         <button className="primary" onClick={save} disabled={busy}>

@@ -1,41 +1,39 @@
-// Username-based auth. Firebase Auth requires an email, so each username is
-// mapped to a synthetic one and the real mapping lives in the `usernames`
-// collection. Members only ever type a username and a password.
+// Username auth, matching the original exactly.
+//
+// Firebase Auth needs an email, so each account gets a synthetic one. Crucially
+// it is NOT derived from the username: sign-up mints `<uuid>@accounts.astralmemes.app`
+// and records it as `authEmail` on the usernames document. Sign-in therefore has
+// to look that address up rather than reconstruct it. The founding Owner is the
+// one exception and resolves directly.
 
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { COL } from './schema';
-
-const DOMAIN = 'astral-memes.app';
+import { COL, AUTH_DOMAIN, FOUNDING_OWNER, FOUNDING_OWNER_EMAIL } from './schema';
 
 export function normalize(username) {
   return String(username || '').trim().toLowerCase();
 }
 
 export function isValidUsername(username) {
-  return /^[a-z0-9_.-]{3,20}$/.test(normalize(username));
+  return /^[a-zA-Z0-9_.-]{3,20}$/.test(String(username || '').trim());
 }
 
-export function usernameToEmail(username) {
-  return `${normalize(username)}@${DOMAIN}`;
+// A fresh synthetic address for a new account.
+export function mintAuthEmail() {
+  return `${crypto.randomUUID()}@${AUTH_DOMAIN}`;
 }
 
-// A username doc is keyed by the normalized name so uniqueness is enforced by
-// document id rather than by a query.
 export async function isUsernameTaken(username) {
   const snap = await getDoc(doc(db, COL.usernames, normalize(username)));
   return snap.exists();
 }
 
-export async function claimUsername(username, uid) {
-  await setDoc(doc(db, COL.usernames, normalize(username)), {
-    uid,
-    username: normalize(username),
-    createdAt: serverTimestamp()
-  });
-}
+// Resolve a username to the address Firebase Auth actually knows it by.
+export async function resolveAuthEmail(username) {
+  const name = normalize(username);
+  if (name === FOUNDING_OWNER) return FOUNDING_OWNER_EMAIL;
 
-export async function lookupUid(username) {
-  const snap = await getDoc(doc(db, COL.usernames, normalize(username)));
-  return snap.exists() ? snap.data().uid : null;
+  const snap = await getDoc(doc(db, COL.usernames, name));
+  if (!snap.exists()) return null;
+  return snap.data()?.authEmail || null;
 }

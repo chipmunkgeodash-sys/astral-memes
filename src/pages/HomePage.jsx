@@ -17,7 +17,7 @@ const LAUNCH = [
 ];
 
 export default function HomePage({ router }) {
-  const { profile, wallet } = useSession();
+  const { profile, balance } = useSession();
   const [announcements, setAnnouncements] = useState([]);
 
   useEffect(() => onSnapshot(
@@ -35,8 +35,7 @@ export default function HomePage({ router }) {
         </h1>
         <p>Jump into a game, share a laugh, or catch up with the community.</p>
         <div className="welcome-actions">
-          <span className="wallet-pill">{(wallet?.coins ?? 0).toLocaleString()} Astral Coins</span>
-          <span className="wallet-pill">{(wallet?.banked ?? 0).toLocaleString()} banked</span>
+          <span className="wallet-pill">{balance.toLocaleString()} Astral Coins</span>
         </div>
       </div>
 

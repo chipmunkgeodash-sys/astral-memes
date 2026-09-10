@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Store, Plus, Coins, Trash2, PiggyBank } from 'lucide-react';
+import { Store, Plus, Coins, Trash2 } from 'lucide-react';
 import {
   collection, onSnapshot, query, orderBy, addDoc, deleteDoc, doc,
-  updateDoc, increment, serverTimestamp, getDoc, setDoc, where
+  updateDoc, increment, serverTimestamp, where
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { COL, LIMITS } from '../lib/schema';
@@ -10,7 +10,7 @@ import { useSession } from '../lib/session';
 import { SectionTitle, Empty, Loader, Modal, Field, ErrorNote } from '../components/ui';
 
 export default function StorePage() {
-  const { user, profile, wallet, isOwner } = useSession();
+  const { user, profile, balance, isOwner } = useSession();
   const [items, setItems] = useState(null);
   const [history, setHistory] = useState([]);
   const [open, setOpen] = useState(false);
@@ -32,26 +32,11 @@ export default function StorePage() {
     );
   }, [user?.uid]);
 
-  const banked = wallet?.banked ?? 0;
-  const coins = wallet?.coins ?? 0;
-
-  const bank = async () => {
-    if (coins <= 0) return;
-    setBusy('bank'); setError('');
-    try {
-      await updateDoc(doc(db, COL.wallets, user.uid), {
-        coins: increment(-coins),
-        banked: increment(coins)
-      });
-    } catch (err) { setError(err.message); } finally { setBusy(''); }
-  };
-
   const redeem = async (item) => {
-    if (banked < item.cost) { setError('You need more Astral Coins for this reward.'); return; }
+    if (balance < item.cost) { setError('You need more Astral Coins for this reward.'); return; }
     setBusy(item.id); setError('');
     try {
-      await updateDoc(doc(db, COL.wallets, user.uid), { banked: increment(-item.cost) });
-      await addDoc(collection(db, COL.redemptions), {
+      const entry = await addDoc(collection(db, COL.redemptions), {
         type: 'reward',
         uid: user.uid,
         displayName: profile?.displayName || null,
@@ -59,6 +44,11 @@ export default function StorePage() {
         itemTitle: item.title,
         amount: -item.cost,
         createdAt: serverTimestamp()
+      });
+      await updateDoc(doc(db, COL.wallets, user.uid), {
+        balance: increment(-item.cost),
+        lastRedemptionId: entry.id,
+        updatedAt: serverTimestamp()
       });
     } catch (err) { setError(err.message); } finally { setBusy(''); }
   };
@@ -75,11 +65,8 @@ export default function StorePage() {
       <p className="owner-note">Redeem banked Astral Coins for Owner-created in-app rewards.</p>
 
       <div className="coin-summary community-card">
-        <span className="wallet-pill"><Coins size={15} /> {coins.toLocaleString()} weekly coins</span>
-        <span className="wallet-pill"><PiggyBank size={15} /> {banked.toLocaleString()} store balance</span>
-        <button className="secondary" onClick={bank} disabled={coins <= 0 || busy === 'bank'}>
-          {busy === 'bank' ? 'Banking your weekly coins…' : 'Bank now'}
-        </button>
+        <span className="wallet-pill"><Coins size={15} /> {balance.toLocaleString()} Astral Coins</span>
+        <span className="count-line">Store balance</span>
       </div>
 
       <ErrorNote>{error}</ErrorNote>
@@ -101,7 +88,7 @@ export default function StorePage() {
               <button
                 className="primary"
                 onClick={() => redeem(it)}
-                disabled={busy === it.id || banked < (it.cost || 0)}
+                disabled={busy === it.id || balance < (it.cost || 0)}
               >
                 {busy === it.id ? 'Redeeming…' : 'Redeem'}
               </button>

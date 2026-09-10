@@ -8,8 +8,8 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
-import { COL, LIMITS, isOwnerUsername } from '../lib/schema';
-import { isValidUsername, isUsernameTaken, claimUsername, usernameToEmail, normalize } from '../lib/usernames';
+import { COL, LIMITS, MEMBER_ROLE_ID } from '../lib/schema';
+import { isValidUsername, isUsernameTaken, resolveAuthEmail, mintAuthEmail, normalize } from '../lib/usernames';
 import StarField from '../components/StarField';
 
 const FEATURES = [
@@ -47,22 +47,44 @@ export default function AuthPage() {
     setBusy(true);
     try {
       if (mode === 'signup') {
-        if (await isUsernameTaken(name)) { setError('That username is taken. Try another.'); return; }
-        const cred = await createUserWithEmailAndPassword(auth, usernameToEmail(name), password);
+        if (await isUsernameTaken(name)) {
+          setError('That username is already taken.');
+          return;
+        }
+        // The auth address is a fresh UUID, not derived from the username, and
+        // is recorded on the usernames document so sign-in can find it again.
+        const authEmail = mintAuthEmail();
+        const cred = await createUserWithEmailAndPassword(auth, authEmail, password);
         await Promise.all([
-          setDoc(doc(db, COL.accounts, cred.user.uid), {
-            username: name,
-            displayName: username.trim(),
-            bio: '',
-            owner: isOwnerUsername(name),
-            roles: [],
+          setDoc(doc(db, COL.usernames, name), {
+            uid: cred.user.uid,
+            authEmail,
             createdAt: serverTimestamp()
           }),
-          setDoc(doc(db, COL.wallets, cred.user.uid), { coins: 0, banked: 0 }),
-          claimUsername(name, cred.user.uid)
+          setDoc(doc(db, COL.accounts, cred.user.uid), {
+            username: username.trim(),
+            usernameLower: name,
+            displayName: username.trim(),
+            bio: '',
+            picture: '',
+            roleIds: [MEMBER_ROLE_ID],
+            permissions: [],
+            createdAt: serverTimestamp()
+          }),
+          setDoc(doc(db, COL.wallets, cred.user.uid), {
+            balance: 0,
+            lastSettledEntryId: '',
+            lastRedemptionId: '',
+            updatedAt: serverTimestamp()
+          })
         ]);
       } else {
-        await signInWithEmailAndPassword(auth, usernameToEmail(name), password);
+        const authEmail = await resolveAuthEmail(name);
+        if (!authEmail) {
+          setError('Your username or password is incorrect.');
+          return;
+        }
+        await signInWithEmailAndPassword(auth, authEmail, password);
       }
     } catch (err) {
       setError(friendly(err, mode));
@@ -225,11 +247,10 @@ export default function AuthPage() {
 
 function friendly(err, mode) {
   const code = String(err?.code || '');
-  if (code.includes('user-not-found')) return 'Account not found. Check the username, or create an account.';
-  if (code.includes('wrong-password') || code.includes('invalid-credential')) {
-    return mode === 'signin' ? 'That username and password don’t match.' : 'Could not sign you in.';
+  if (code.includes('user-not-found') || code.includes('wrong-password') || code.includes('invalid-credential')) {
+    return 'Your username or password is incorrect.';
   }
-  if (code.includes('email-already-in-use')) return 'That username is taken. Try another.';
+  if (code.includes('email-already-in-use')) return 'That username is already taken.';
   if (code.includes('weak-password')) return 'Choose a stronger password with at least 8 characters.';
   if (code.includes('too-many-requests')) return 'Too many attempts. Wait a moment and try again.';
   if (code.includes('network')) return 'Network problem. Check your connection and try again.';

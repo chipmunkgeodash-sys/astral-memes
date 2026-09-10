@@ -21,7 +21,7 @@ const NAV = [
 const MOBILE_NAV = [NAV[0], NAV[1], NAV[2], NAV[5], NAV[7]];
 
 export default function Shell({ router, children }) {
-  const { profile, wallet, can, isOwner, signOut } = useSession();
+  const { profile, balance, can, isOwner, signOut } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const here = (to) => (to === '/' ? router.path === '/' : router.path.startsWith(to));
 
@@ -85,7 +85,7 @@ export default function Shell({ router, children }) {
           <div className="top-actions">
             <span className="wallet-pill" title="Astral Coins">
               <Coins size={15} />
-              {(wallet?.coins ?? 0).toLocaleString()}
+              {(balance).toLocaleString()}
             </span>
             <button className="icon-btn" onClick={() => go('/profile')}>
               <Avatar profile={profile} size={28} />

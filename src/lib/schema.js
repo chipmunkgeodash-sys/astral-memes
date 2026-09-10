@@ -1,5 +1,5 @@
-// Firestore collection names and permission keys, recovered from the deployed
-// bundle's call sites. These must match exactly or the app won't see live data.
+// Firestore shape, recovered from the deployed bundle. Field names here must
+// match exactly or the app won't read the live data.
 
 export const COL = {
   accounts: 'accounts',
@@ -15,38 +15,49 @@ export const COL = {
   announcements: 'announcements',
   storeItems: 'storeItems',
   redemptions: 'redemptions',
-  // Holds the base64 AES-GCM key for the encrypted game library at
-  // paidContent/games.key. Reads are gated by `accessPaidGames` in rules.
+  // paidContent/games.key holds the base64 AES-GCM key for the game library.
   paidContent: 'paidContent'
 };
 
-// Image upload constraints enforced by the original app.
-export const UPLOAD = {
-  types: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
-  maxBytes: 2097152
+// Auth uses synthetic addresses on this domain; the real one per account is
+// stored as `authEmail` on its usernames document.
+export const AUTH_DOMAIN = 'accounts.astralmemes.app';
+
+// The founding Owner is resolved directly rather than through a lookup.
+export const FOUNDING_OWNER = 'zentraa';
+export const FOUNDING_OWNER_EMAIL = `${FOUNDING_OWNER}@${AUTH_DOMAIN}`;
+
+// Permission key -> label, in the original's order.
+export const PERMISSION_LABELS = {
+  manageUsers: 'Manage users',
+  manageAnnouncements: 'Manage announcements',
+  moderateMemes: 'Moderate posts',
+  deleteMessages: 'Delete messages',
+  manageChat: 'Manage global chat',
+  accessAdmin: 'Access admin dashboard',
+  manageSubscriptions: 'Manage subscriptions',
+  accessPaidGames: 'Access paid game library',
+  accessEarlyFeatures: 'Access early and testing features'
 };
 
-// Usernames that are granted Owner the moment they are created. Usernames are
-// claimed atomically by document id in the `usernames` collection, so only one
-// account can ever hold a given name.
-export const OWNER_USERNAMES = ['zentraa'];
+export const ALL_PERMISSIONS = Object.keys(PERMISSION_LABELS);
 
-export function isOwnerUsername(username) {
-  return OWNER_USERNAMES.includes(String(username || '').trim().toLowerCase());
-}
+export const PERMISSIONS = ALL_PERMISSIONS.map((key) => ({
+  key,
+  label: PERMISSION_LABELS[key]
+}));
 
-// Permission flags stored on role documents.
-export const PERMISSIONS = [
-  { key: 'accessAdmin', label: 'Access admin dashboard' },
-  { key: 'moderateMemes', label: 'Moderate posts' },
-  { key: 'accessPaidGames', label: 'Access paid game library' },
-  { key: 'accessEarlyFeatures', label: 'Access early and testing features' },
-  { key: 'manageAnnouncements', label: 'Manage announcements' }
+// Seeded roles. Ids are stable and referenced by accounts.roleIds.
+export const DEFAULT_ROLES = [
+  { id: 'owner', name: 'Owner', color: '#b5a3ff', permissions: ALL_PERMISSIONS },
+  { id: 'member', name: 'Frostbite', color: '#b9cce0', permissions: [] },
+  { id: 'arctic', name: 'Arctic', color: '#73d7ff', permissions: ['accessPaidGames'] },
+  { id: 'astral', name: 'Astral', color: '#bb8cff', permissions: ['accessPaidGames', 'accessEarlyFeatures'] }
 ];
 
-export const PERMISSION_KEYS = PERMISSIONS.map((p) => p.key);
+export const OWNER_ROLE_ID = 'owner';
+export const MEMBER_ROLE_ID = 'member';
 
-// Limits enforced by the original UI copy.
 export const LIMITS = {
   weeklyAllowanceMin: 25,
   weeklyAllowanceMax: 10000,
@@ -60,10 +71,20 @@ export const LIMITS = {
   foreverRefillPoints: 100
 };
 
-// An Owner implicitly holds every permission.
+export const UPLOAD = {
+  types: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+  maxBytes: 2097152
+};
+
+export function isOwner(profile) {
+  return !!profile && (profile.roleIds || []).includes(OWNER_ROLE_ID);
+}
+
+// Permissions come from assigned roles plus any granted directly on the account.
 export function hasPermission(profile, roles, key) {
   if (!profile) return false;
-  if (profile.owner) return true;
-  const mine = roles.filter((r) => (profile.roles || []).includes(r.id));
-  return mine.some((r) => r.permissions && r.permissions[key]);
+  if (isOwner(profile)) return true;
+  if ((profile.permissions || []).includes(key)) return true;
+  const ids = profile.roleIds || [];
+  return roles.some((r) => ids.includes(r.id) && (r.permissions || []).includes(key));
 }

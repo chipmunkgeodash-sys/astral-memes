@@ -7,11 +7,11 @@ export default function Avatar({ profile, size = 40 }) {
   const initials = name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
   const pack = PACKS[Math.abs(hash(profile?.id || name)) % PACKS.length];
 
-  if (profile?.photoURL) {
+  if (profile?.picture) {
     return (
       <img
         className={`avatar ${pack}`}
-        src={profile.photoURL}
+        src={profile.picture}
         alt={name}
         width={size}
         height={size}
