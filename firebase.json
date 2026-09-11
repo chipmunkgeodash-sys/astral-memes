@@ -10,10 +10,16 @@
       "rewrites": [{ "source": "**", "destination": "/index.html" }]
     },
     {
-      "site": "astral-memes-zentraa",
-      "public": "player",
+      "site": "astral-owner",
+      "public": "dist-admin",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-      "rewrites": [{ "source": "**", "destination": "/index.html" }]
+      "rewrites": [{ "source": "**", "destination": "/index.html" }],
+      "headers": [
+        {
+          "source": "**",
+          "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+        }
+      ]
     }
   ]
 }

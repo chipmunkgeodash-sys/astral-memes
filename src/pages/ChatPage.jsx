@@ -92,7 +92,7 @@ export default function ChatPage() {
         eyebrow="Everyone, all at once"
         title="Chat"
         actions={
-          <button className="btn btn-primary" onClick={() => setComposer(true)}>
+          <button className="btn btn-primary" onClick={() => setComposer(true)} disabled={!accountId}>
             <Plus size={15} /> New group
           </button>
         }
@@ -283,6 +283,9 @@ function GroupComposer({ accountId, displayName, onClose, onCreated }) {
 
   const create = async () => {
     if (!name.trim()) { setError('Give the group a name.'); return; }
+    // accountId resolves asynchronously; creating before it lands would write a
+    // null member and the rules would reject it as someone else's group.
+    if (!accountId) { setError('Still loading your account — try again in a second.'); return; }
     setBusy(true); setError('');
     try {
       const ref = await addDoc(collection(db, COL.groups), {

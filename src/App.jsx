@@ -15,7 +15,6 @@ import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import UserPage from './pages/UserPage';
 import AdminPage from './pages/AdminPage';
-import OwnerPage from './pages/OwnerPage';
 import TermsPage from './pages/TermsPage';
 
 const ROUTES = {
@@ -31,7 +30,6 @@ const ROUTES = {
   settings: SettingsPage,
   u: UserPage,
   admin: AdminPage,
-  owner: OwnerPage,
   terms: TermsPage
 };
 

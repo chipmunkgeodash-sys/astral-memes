@@ -993,3 +993,13 @@ h1 { text-shadow: 0 0 26px color-mix(in srgb, var(--accent) 30%, transparent); }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
   .btn-primary::after { display: none; }
 }
+
+/* Clickable profile in a conversation header. */
+.dm-head-profile {
+  display: flex; align-items: center; gap: 10px;
+  border: 0; background: none; padding: 2px 4px; border-radius: 3px;
+  text-align: left; color: inherit;
+  transition: background .12s;
+}
+.dm-head-profile:hover { background: var(--surface); }
+.dm-head-profile:hover strong { color: var(--accent); }

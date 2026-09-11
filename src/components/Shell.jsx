@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Home, Rss, Trophy, Vote, Store, Gamepad2, MessageCircle, Hash,
-  Shield, LogOut, Search, Coins, Menu, Sun, Moon, Settings, ShieldCheck, FileText
+  Shield, LogOut, Search, Coins, Menu, Sun, Moon, Settings, ShieldCheck, FileText, ExternalLink
 } from 'lucide-react';
 import { useSession } from '../lib/session';
 import { useTheme } from '../lib/theme';
@@ -60,14 +60,17 @@ export default function Shell({ router, children }) {
             </button>
           )}
           {isOwner && (
-            <button
+            // The Owner console is a separate site on its own origin.
+            <a
               className="nav-item nav-owner"
-              aria-current={active('/owner') ? 'page' : undefined}
-              onClick={() => go('/owner')}
+              href="https://astral-owner.web.app"
+              target="_blank"
+              rel="noreferrer"
             >
               <ShieldCheck size={17} />
-              Owner panel
-            </button>
+              Owner console
+              <ExternalLink size={13} style={{ marginLeft: 'auto', opacity: .7 }} />
+            </a>
           )}
         </nav>
 

@@ -1,0 +1,55 @@
+/* Console chrome. Always dark, regardless of the member-site theme. */
+
+:root,
+:root[data-theme="light"],
+:root:not([data-theme="light"]) {
+  --accent: #6ee7ff;
+  --accent-hover: #8aecff;
+  --accent-soft: #10242c;
+  --accent-text: #04121a;
+
+  --bg: #06080d;
+  --surface: #0c1017;
+  --surface-2: #10151e;
+  --raised: #121822;
+
+  --text: #e6edf5;
+  --text-muted: #97a3b4;
+  --text-faint: #63707f;
+
+  --border: #1b2430;
+  --border-strong: #27303e;
+
+  --danger: #ff6b6b;
+  --danger-soft: #2a1418;
+  --success: #4ade80;
+
+  color-scheme: dark;
+}
+
+body { background: var(--bg); }
+
+.admin-shell { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+.admin-bar { padding: 0 20px; gap: 12px; }
+.admin-shell .content { max-width: 1180px; margin: 0 auto; width: 100%; padding: 24px 20px 60px; }
+
+.admin-login {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: grid; place-items: center;
+  padding: 20px;
+}
+.admin-login .card { width: min(380px, 100%); }
+
+/* The console leans harder on the grid-and-glow treatment than the main app. */
+.admin-shell::after {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(110, 231, 255, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(110, 231, 255, .05) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: radial-gradient(80% 70% at 50% 0%, #000 20%, transparent 75%);
+}
+.admin-shell > * { position: relative; z-index: 1; }
+
+.admin-bar .brand-name { color: var(--accent); }

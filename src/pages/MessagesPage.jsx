@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { MessageCircle, Search } from 'lucide-react';
+import { MessageCircle, Search, User } from 'lucide-react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { COL } from '../lib/schema';
 import { useSession } from '../lib/session';
-import { PageHead, Empty } from '../components/ui';
+import { PageHead, Empty, navigateTo } from '../components/ui';
 import Avatar from '../components/Avatar';
 import Thread from '../components/Thread';
 
@@ -81,11 +81,24 @@ export default function MessagesPage() {
             emptyBody="Start the conversation."
             header={
               <>
-                <Avatar profile={partner} size={32} />
-                <div className="me-text">
-                  <strong>{partner.displayName || 'Astral member'}</strong>
-                  {partner.username && <small>@{partner.username}</small>}
-                </div>
+                <button
+                  className="dm-head-profile"
+                  onClick={() => navigateTo(`/u/${encodeURIComponent(partner.usernameLower || partner.id)}`)}
+                  title="View profile"
+                >
+                  <Avatar profile={partner} size={32} />
+                  <span className="me-text">
+                    <strong>{partner.displayName || 'Astral member'}</strong>
+                    {partner.username && <small>@{partner.username}</small>}
+                  </span>
+                </button>
+                <button
+                  className="btn btn-sm"
+                  style={{ marginLeft: 'auto' }}
+                  onClick={() => navigateTo(`/u/${encodeURIComponent(partner.usernameLower || partner.id)}`)}
+                >
+                  <User size={13} /> Profile
+                </button>
               </>
             }
           />
