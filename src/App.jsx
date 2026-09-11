@@ -7,7 +7,7 @@ import AuthPage from './pages/AuthPage';
 import HomePage from './pages/HomePage';
 import FeedPage from './pages/FeedPage';
 import ChatPage from './pages/ChatPage';
-import ChallengesPage from './pages/ChallengesPage';
+import CasinoPage from './pages/CasinoPage';
 import PollsPage from './pages/PollsPage';
 import StorePage from './pages/StorePage';
 import GamesPage from './pages/GamesPage';
@@ -23,7 +23,7 @@ const ROUTES = {
   '': HomePage,
   feed: FeedPage,
   chat: ChatPage,
-  challenges: ChallengesPage,
+  casino: CasinoPage,
   polls: PollsPage,
   store: StorePage,
   games: GamesPage,

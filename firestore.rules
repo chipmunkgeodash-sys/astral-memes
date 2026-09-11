@@ -77,14 +77,39 @@ service cloud.firestore {
       allow delete: if isOwner();
     }
 
-    // A member may only ever DECREASE their own balance (redeeming). Any
-    // increase must come from an Owner, so nobody can mint themselves coins.
+    // The daily top-up is the one balance increase that can be verified without
+    // a server: exactly DAILY_POINTS, and only once the cooldown has elapsed.
+    function isDailyClaim() {
+      return request.resource.data.balance == resource.data.balance + 100
+        && request.resource.data.lastClaimAt == request.time
+        && (!('lastClaimAt' in resource.data)
+            || resource.data.lastClaimAt == null
+            || request.time.toMillis() - resource.data.lastClaimAt.toMillis() >= 72000000);
+    }
+
+    // Casino wins also raise the balance, and no rule can check a dice roll.
+    // Capping the jump per write keeps a stray client from minting millions;
+    // properly settling bets server-side would need Cloud Functions.
+    function isPlausibleRound() {
+      return request.resource.data.balance
+        <= resource.data.balance + 100000;
+    }
+
     match /wallets/{id} {
       allow read: if signedIn();
       allow create: if isOwner()
-        || (id == request.auth.uid && request.resource.data.balance == 0);
+        || (id == request.auth.uid
+            && request.resource.data.balance == 0)
+        // A brand-new wallet may be opened by its first daily claim.
+        || (id == request.auth.uid
+            && request.resource.data.balance == 100
+            && request.resource.data.lastClaimAt == request.time);
       allow update: if isOwner()
-        || (mine(id) && request.resource.data.balance <= resource.data.balance);
+        || (mine(id) && active() && (
+              request.resource.data.balance <= resource.data.balance   // spending or losing
+              || isDailyClaim()
+              || isPlausibleRound()
+            ));
       allow delete: if isOwner();
     }
 
@@ -162,18 +187,6 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if active() && request.resource.data.uid == myId();
       allow delete: if mine(resource.data.uid) || can('manageChat') || isOwner();
-    }
-
-    match /challenges/{challengeId} {
-      allow read: if signedIn();
-      allow write: if isOwner();
-    }
-
-    // Your own entry only. Points are self-reported, as in the original.
-    match /challengeEntries/{entryId} {
-      allow read: if signedIn();
-      allow create, update: if active() && request.resource.data.uid == myId();
-      allow delete: if isOwner();
     }
 
     match /polls/{pollId} {

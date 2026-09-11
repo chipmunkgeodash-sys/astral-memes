@@ -76,7 +76,7 @@ function Blackjack({ points, settle, busy }) {
 
   const finish = (payout, text, tone) => {
     setMsg({ text, tone });
-    settle(payout - bet);
+    settle(payout - bet, `Blackjack · ${text}`);
   };
 
   const hit = () => {
@@ -169,7 +169,7 @@ function Mines({ points, settle, busy }) {
     if (game.mines.includes(i)) {
       setGame({ ...game, dead: true });
       setMsg({ text: 'Mine hit. Bet lost.', tone: 'lose' });
-      settle(-bet);
+      settle(-bet, 'Mines · hit a mine');
       return;
     }
     const revealed = [...game.revealed, i];
@@ -177,7 +177,7 @@ function Mines({ points, settle, busy }) {
       setGame({ ...game, revealed, dead: true });
       const payout = payoutFor(revealed.length);
       setMsg({ text: `Cleared the board! Payout: ${payout} coins.`, tone: 'win' });
-      settle(payout - bet);
+      settle(payout - bet, 'Mines · cleared the board');
       return;
     }
     setGame({ ...game, revealed });
@@ -187,7 +187,7 @@ function Mines({ points, settle, busy }) {
     const payout = payoutFor(game.revealed.length);
     setGame({ ...game, dead: true });
     setMsg({ text: `Cashed out safely. Payout: ${payout} coins.`, tone: 'win' });
-    settle(payout - bet);
+    settle(payout - bet, `Mines · cashed out on ${game.revealed.length} tiles`);
   };
 
   const live = game && !game.dead;
@@ -254,10 +254,10 @@ function PokerDraw({ points, settle, busy }) {
     setGame({ player, dealer, mine, theirs });
     if (diff > 0) {
       setMsg({ text: `${mine.name} beats ${theirs.name}.`, tone: 'win' });
-      settle(bet);
+      settle(bet, `Poker · ${mine.name} beat ${theirs.name}`);
     } else if (diff < 0) {
       setMsg({ text: `${theirs.name} beats your ${mine.name}.`, tone: 'lose' });
-      settle(-bet);
+      settle(-bet, `Poker · lost to ${theirs.name}`);
     } else {
       setMsg({ text: `Tie — both ${mine.name}. Bet returned.`, tone: 'idle' });
     }

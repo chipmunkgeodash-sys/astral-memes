@@ -6,8 +6,6 @@ export const COL = {
   usernames: 'usernames',
   wallets: 'wallets',
   roles: 'roles',
-  challenges: 'challenges',
-  challengeEntries: 'challengeEntries',
   polls: 'polls',
   posts: 'posts',
   messages: 'messages',
@@ -67,17 +65,19 @@ export const DEFAULT_ROLES = [
 export const OWNER_ROLE_ID = 'owner';
 export const MEMBER_ROLE_ID = 'member';
 
+// Everyone claims a fixed top-up once a day. The cooldown is under 24h so the
+// claim doesn't drift later and later for someone who plays at the same time.
+export const DAILY_POINTS = 100;
+export const DAILY_COOLDOWN_MS = 20 * 60 * 60 * 1000;
+
 export const LIMITS = {
-  weeklyAllowanceMin: 25,
-  weeklyAllowanceMax: 10000,
   rewardCostMin: 1,
   rewardCostMax: 100000,
   pollQuestionMax: 180,
   pollChoicesMin: 2,
   pollChoicesMax: 6,
-  weeklyChallengeMaxDays: 8,
   passwordMin: 8,
-  foreverRefillPoints: 100
+  minBet: 1
 };
 
 export const UPLOAD = {

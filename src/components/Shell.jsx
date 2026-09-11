@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
-  Home, Rss, Trophy, Vote, Store, Gamepad2, MessageCircle, Hash,
-  Shield, LogOut, Search, Coins, Menu, Sun, Moon, Settings, ShieldCheck, FileText, ExternalLink
+  Home, Rss, Vote, Store, Gamepad2, MessageCircle, Hash,
+  Shield, LogOut, Search, Coins, Menu, Sun, Moon, Settings, ShieldCheck, FileText, ExternalLink, Dices
 } from 'lucide-react';
 import { useSession } from '../lib/session';
 import { useTheme } from '../lib/theme';
@@ -12,7 +12,7 @@ const NAV = [
   { to: '/feed', label: 'Feed', icon: Rss },
   { to: '/chat', label: 'Global chat', icon: Hash },
   { to: '/messages', label: 'Messages', icon: MessageCircle },
-  { to: '/challenges', label: 'Challenges', icon: Trophy },
+  { to: '/casino', label: 'Casino', icon: Dices },
   { to: '/games', label: 'Games', icon: Gamepad2 },
   { to: '/polls', label: 'Polls', icon: Vote },
   { to: '/store', label: 'Store', icon: Store }

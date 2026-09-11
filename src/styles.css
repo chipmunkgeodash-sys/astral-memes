@@ -1034,3 +1034,8 @@ h1 { text-shadow: 0 0 26px color-mix(in srgb, var(--accent) 30%, transparent); }
 
 /* Search results reuse the page rhythm. */
 .content h2 .lucide { color: var(--accent); }
+
+/* Daily claim, lit when it's ready. */
+.daily-ready { border-color: var(--accent); box-shadow: var(--glow); }
+.daily-ready .tile-icon { background: var(--grad); color: var(--accent-text); }
+.stat-icon.lose { color: var(--danger); }
