@@ -1003,3 +1003,34 @@ h1 { text-shadow: 0 0 26px color-mix(in srgb, var(--accent) 30%, transparent); }
 }
 .dm-head-profile:hover { background: var(--surface); }
 .dm-head-profile:hover strong { color: var(--accent); }
+
+/* ---------------------------------------------------------- home stats */
+
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.stat {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 14px 16px;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  border: 1px solid var(--border);
+  position: relative;
+  clip-path: polygon(
+    var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)),
+    calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut)
+  );
+}
+.stat-icon { color: var(--accent); margin-bottom: 4px; }
+.stat strong { font-size: 1.5rem; font-family: var(--mono); letter-spacing: -.02em; line-height: 1.1; }
+.stat small { color: var(--text-faint); font-size: .76rem; font-family: var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+
+/* The one highlighted call-to-action on Home. */
+.feature {
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  transition: border-color .14s, box-shadow .14s, transform .1s;
+}
+.feature:hover { border-color: var(--accent); box-shadow: var(--glow); transform: translateY(-2px); }
+.feature-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.feature-text strong { font-size: 1.05rem; }
+
+/* Search results reuse the page rhythm. */
+.content h2 .lucide { color: var(--accent); }

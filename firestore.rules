@@ -29,6 +29,13 @@ service cloud.firestore {
       return signedIn() && myId() == id;
     }
 
+    // A suspended account keeps read access but cannot create anything.
+    function active() {
+      return signedIn()
+        && (!exists(/databases/$(database)/documents/accounts/$(myId()))
+            || myAccount().get('suspended', false) == false);
+    }
+
     function myAccount() {
       return get(/databases/$(database)/documents/accounts/$(myId())).data;
     }
@@ -88,7 +95,7 @@ service cloud.firestore {
 
     match /posts/{postId} {
       allow read: if signedIn();
-      allow create: if signedIn() && request.resource.data.uid == myId();
+      allow create: if active() && request.resource.data.uid == myId();
       // Anyone signed in may like; only the author or a moderator changes the rest.
       allow update: if signedIn() && (
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
@@ -114,7 +121,7 @@ service cloud.firestore {
     // only the group's creator or an Owner can do.
     match /groups/{groupId} {
       allow read: if signedIn();
-      allow create: if signedIn()
+      allow create: if active()
         && request.resource.data.createdBy == myId()
         && myId() in request.resource.data.members;
       allow update: if isOwner()
@@ -137,7 +144,7 @@ service cloud.firestore {
         || (resource.data.groupId != null && inGroup(resource.data.groupId))
         || myId() in resource.data.thread.split('__')
       );
-      allow create: if signedIn()
+      allow create: if active()
         && request.resource.data.uid == myId()
         && (
           request.resource.data.thread == 'the-lounge'
@@ -153,7 +160,7 @@ service cloud.firestore {
 
     match /chat/{docId} {
       allow read: if signedIn();
-      allow create: if signedIn() && request.resource.data.uid == myId();
+      allow create: if active() && request.resource.data.uid == myId();
       allow delete: if mine(resource.data.uid) || can('manageChat') || isOwner();
     }
 
@@ -165,7 +172,7 @@ service cloud.firestore {
     // Your own entry only. Points are self-reported, as in the original.
     match /challengeEntries/{entryId} {
       allow read: if signedIn();
-      allow create, update: if signedIn() && request.resource.data.uid == myId();
+      allow create, update: if active() && request.resource.data.uid == myId();
       allow delete: if isOwner();
     }
 

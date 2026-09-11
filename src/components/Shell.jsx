@@ -24,6 +24,7 @@ export default function Shell({ router, children }) {
   const { profile, balance, can, isOwner, signOut } = useSession();
   const { toggle, isDark } = useTheme();
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
 
   const active = (to) => (to === '/' ? router.path === '/' : router.path.startsWith(to));
   const go = (to) => { router.navigate(to); setOpen(false); };
@@ -114,10 +115,22 @@ export default function Shell({ router, children }) {
             <Menu size={18} />
           </button>
 
-          <label className="search">
+          <form
+            className="search"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const q = search.trim();
+              go(q ? `/search/${encodeURIComponent(q)}` : '/search');
+            }}
+          >
             <Search size={15} />
-            <input placeholder="Search people, posts, announcements…" />
-          </label>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search people, posts, games…"
+              aria-label="Search"
+            />
+          </form>
 
           <div className="row" style={{ marginLeft: 'auto' }}>
             <span className="chip chip-accent" title="Astral Coins">
