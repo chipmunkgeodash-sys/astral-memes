@@ -1,57 +1,44 @@
 import { useEffect, useState } from 'react';
 import { Coins, Gift, Clock, TrendingUp, TrendingDown } from 'lucide-react';
 import {
-  doc, updateDoc, increment, serverTimestamp, collection, query, where, onSnapshot, addDoc, limit
+  doc, updateDoc, increment, serverTimestamp, collection,
+  query, onSnapshot, addDoc, limit
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { COL, DAILY_POINTS } from '../lib/schema';
 import { useSession } from '../lib/session';
-import { canClaim, msUntilNextClaim, formatCountdown, claimDaily } from '../lib/daily';
-import { PageHead, Empty, ErrorNote, Toast } from '../components/ui';
+import { msUntilNextClaim, formatCountdown } from '../lib/daily';
+import { PageHead, Empty, ErrorNote, Tabs, UserLink } from '../components/ui';
 import Arcade from '../components/Arcade';
+import Avatar from '../components/Avatar';
 
 export default function CasinoPage() {
-  const { accountId, wallet, balance, profile } = useSession();
+  const { accountId, wallet, balance, profile, justClaimed } = useSession();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [toast, setToast] = useState('');
-  const [history, setHistory] = useState([]);
+  const [bets, setBets] = useState([]);
+  const [tab, setTab] = useState('mine');
   const [, tick] = useState(0);
 
-  // Keep the countdown moving without re-reading the wallet.
   useEffect(() => {
     const t = setInterval(() => tick((n) => n + 1), 30000);
     return () => clearInterval(t);
   }, []);
 
-  useEffect(() => {
-    if (!accountId) return undefined;
-    return onSnapshot(
-      query(collection(db, COL.redemptions), where('uid', '==', accountId), limit(100)),
-      (snap) => {
-        const rows = snap.docs
-          .map((d) => ({ id: d.id, ...d.data() }))
-          .filter((r) => r.type === 'bet')
-          .sort((a, b) => ms(b.createdAt) - ms(a.createdAt))
-          .slice(0, 12);
-        setHistory(rows);
-      },
-      () => setHistory([])
-    );
-  }, [accountId]);
+  // One listener for the whole ledger; split by account in the view. Bets are
+  // visible to every member — it's a casino, the wins are the fun part.
+  useEffect(() => onSnapshot(
+    query(collection(db, COL.redemptions), limit(400)),
+    (snap) => {
+      const rows = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((r) => r.type === 'bet')
+        .sort((a, b) => ms(b.createdAt) - ms(a.createdAt));
+      setBets(rows);
+    },
+    () => setBets([])
+  ), []);
 
-  const flash = (m) => { setToast(m); setTimeout(() => setToast(''), 2200); };
-
-  const claim = async () => {
-    if (!accountId) return;
-    setBusy(true); setError('');
-    try {
-      await claimDaily(accountId);
-      flash(`+${DAILY_POINTS} coins`);
-    } catch (err) { setError(err.message); } finally { setBusy(false); }
-  };
-
-  // Every round resolves to one net change on the wallet, plus a ledger row.
   const settle = async (delta, note) => {
     if (!accountId || !delta) return;
     setBusy(true); setError('');
@@ -71,31 +58,30 @@ export default function CasinoPage() {
     } catch (err) { setError(err.message); } finally { setBusy(false); }
   };
 
-  const ready = canClaim(wallet);
   const wait = msUntilNextClaim(wallet);
+  const mine = bets.filter((b) => b.uid === accountId).slice(0, 20);
+  const everyone = bets.slice(0, 40);
+  const shown = tab === 'mine' ? mine : everyone;
 
   return (
     <div className="stack">
       <PageHead
-        eyebrow="Spend what you earn"
+        eyebrow="Bet your coins"
         title="Casino"
         actions={<span className="chip chip-accent"><Coins size={13} /> {balance.toLocaleString()}</span>}
       />
 
-      <div className={ready ? 'card feature daily-ready' : 'card feature'}>
-        <span className="tile-icon">{ready ? <Gift size={18} /> : <Clock size={18} />}</span>
+      <div className={justClaimed ? 'card feature daily-ready' : 'card feature'}>
+        <span className="tile-icon">{justClaimed ? <Gift size={18} /> : <Clock size={18} />}</span>
         <span className="feature-text">
           <span className="eyebrow" style={{ margin: 0 }}>Daily coins</span>
-          <strong>{ready ? `${DAILY_POINTS} coins are waiting` : 'Already claimed'}</strong>
+          <strong>{justClaimed ? `+${justClaimed} coins added` : `${DAILY_POINTS} coins, every day`}</strong>
           <span className="muted">
-            {ready
-              ? 'Free every day, whatever happens at the tables.'
-              : `Come back in ${formatCountdown(wait)}.`}
+            {justClaimed
+              ? 'Added automatically — no button to press.'
+              : `Next lot arrives on its own in ${formatCountdown(wait)}.`}
           </span>
         </span>
-        <button className="btn btn-primary" onClick={claim} disabled={!ready || busy || !accountId}>
-          {busy ? 'Claiming…' : ready ? 'Claim' : 'Claimed'}
-        </button>
       </div>
 
       <ErrorNote>{error}</ErrorNote>
@@ -104,38 +90,72 @@ export default function CasinoPage() {
         <Empty
           icon={Coins}
           title="You're out of coins."
-          body={ready ? 'Claim your daily coins above to keep playing.' : `More arrive in ${formatCountdown(wait)}.`}
+          body={`More arrive automatically in ${formatCountdown(wait)}.`}
         />
       ) : (
         <Arcade points={balance} settle={settle} busy={busy} />
       )}
 
-      {!!history.length && (
-        <section>
-          <h2 style={{ marginBottom: 12 }}>Recent rounds</h2>
+      <section>
+        <div className="spread" style={{ marginBottom: 12 }}>
+          <h2>Results</h2>
+          <Tabs
+            value={tab}
+            onChange={setTab}
+            options={[
+              { value: 'mine', label: `Yours ${mine.length}` },
+              { value: 'all', label: 'Everyone' }
+            ]}
+          />
+        </div>
+
+        {!shown.length ? (
+          <Empty
+            icon={Dice}
+            title={tab === 'mine' ? 'No rounds yet.' : 'Nobody has played yet.'}
+            body={tab === 'mine' ? 'Play a hand and it shows up here.' : 'Be the first at the tables.'}
+          />
+        ) : (
           <div className="list">
-            {history.map((h) => (
-              <div key={h.id} className="row-item">
-                <span className={h.amount > 0 ? 'stat-icon' : 'stat-icon lose'}>
-                  {h.amount > 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+            {shown.map((b) => (
+              <div key={b.id} className="row-item">
+                {tab === 'all' && (
+                  <Avatar profile={{ id: b.uid, displayName: b.displayName }} size={26} />
+                )}
+                <span className="me-text grow">
+                  {tab === 'all' && (
+                    <UserLink to={b.uid}>{b.displayName || 'Astral member'}</UserLink>
+                  )}
+                  <small className="truncate">{b.note || 'Round'}</small>
                 </span>
-                <span className="grow truncate">{h.note || 'Round'}</span>
-                <span className={h.amount > 0 ? 'chip chip-live' : 'chip'}>
-                  {h.amount > 0 ? `+${h.amount.toLocaleString()}` : h.amount.toLocaleString()}
+                <span className={b.amount > 0 ? 'chip chip-live' : 'chip'}>
+                  {b.amount > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                  {b.amount > 0 ? `+${b.amount.toLocaleString()}` : b.amount.toLocaleString()}
                 </span>
               </div>
             ))}
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       <p className="faint">
         Astral Coins are virtual points inside this site. They have no real-world value
-        and can't be bought or cashed out.
+        and can't be bought or cashed out. Results are visible to everyone.
       </p>
-
-      {toast && <Toast>{toast}</Toast>}
     </div>
+  );
+}
+
+// Small inline die so the empty state doesn't need another icon import.
+function Dice(props) {
+  return (
+    <svg viewBox="0 0 24 24" width={props.size || 20} height={props.size || 20}
+      fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+      <circle cx="8.5" cy="8.5" r="1" fill="currentColor" />
+      <circle cx="15.5" cy="15.5" r="1" fill="currentColor" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" />
+    </svg>
   );
 }
 

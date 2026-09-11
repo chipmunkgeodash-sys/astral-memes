@@ -1,8 +1,9 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, onSnapshot, collection } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { COL, DEFAULT_ROLES, hasPermission, isOwner as isOwnerProfile } from './schema';
+import { canClaim, claimDaily } from './daily';
 
 const SessionContext = createContext(null);
 
@@ -31,6 +32,8 @@ export function SessionProvider({ children }) {
   const [wallet, setWallet] = useState(null);
   const [roles, setRoles] = useState(DEFAULT_ROLES);
   const [ready, setReady] = useState(false);
+  const [justClaimed, setJustClaimed] = useState(0);
+  const claimedRef = useRef(null);
 
   useEffect(() => onAuthStateChanged(auth, async (u) => {
     setUser(u);
@@ -59,6 +62,21 @@ export function SessionProvider({ children }) {
       () => setWallet({ balance: 0 })
     );
   }, [accountId]);
+
+  // The daily allowance lands on its own — no button to find. The rules still
+  // enforce the amount and the cooldown, so a retry loop can't stack claims.
+  useEffect(() => {
+    if (!accountId || !wallet) return;
+    if (claimedRef.current === accountId) return;
+    if (!canClaim(wallet)) return;
+    claimedRef.current = accountId;
+    claimDaily(accountId)
+      .then((amount) => {
+        setJustClaimed(amount);
+        setTimeout(() => setJustClaimed(0), 4000);
+      })
+      .catch(() => { claimedRef.current = null; });
+  }, [accountId, wallet]);
 
   useEffect(() => onSnapshot(
     collection(db, COL.roles),

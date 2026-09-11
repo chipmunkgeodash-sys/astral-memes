@@ -7,8 +7,8 @@ import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestor
 import { db } from '../firebase';
 import { COL, DAILY_POINTS } from '../lib/schema';
 import { useSession } from '../lib/session';
-import { canClaim, msUntilNextClaim, formatCountdown, claimDaily } from '../lib/daily';
-import { PageHead, SectionHead, UserLink, ErrorNote, Toast } from '../components/ui';
+import { msUntilNextClaim, formatCountdown } from '../lib/daily';
+import { PageHead, SectionHead, UserLink } from '../components/ui';
 import Avatar from '../components/Avatar';
 
 const TILES = [
@@ -21,14 +21,11 @@ const TILES = [
 ];
 
 export default function HomePage({ router }) {
-  const { accountId, profile, wallet, balance, isOwner } = useSession();
+  const { profile, wallet, balance, isOwner, justClaimed } = useSession();
   const [announcements, setAnnouncements] = useState([]);
   const [posts, setPosts] = useState([]);
   const [memberCount, setMemberCount] = useState(0);
   const [gameCount, setGameCount] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const [toast, setToast] = useState('');
   const [, tick] = useState(0);
 
   useEffect(() => {
@@ -63,18 +60,7 @@ export default function HomePage({ router }) {
     return () => { alive = false; };
   }, []);
 
-  const ready = canClaim(wallet);
   const wait = msUntilNextClaim(wallet);
-
-  const claim = async () => {
-    if (!accountId) return;
-    setBusy(true); setError('');
-    try {
-      await claimDaily(accountId);
-      setToast(`+${DAILY_POINTS} coins`);
-      setTimeout(() => setToast(''), 2200);
-    } catch (err) { setError(err.message); } finally { setBusy(false); }
-  };
 
   return (
     <div className="stack">
@@ -90,21 +76,20 @@ export default function HomePage({ router }) {
         <Stat icon={Gamepad2} value={gameCount ? gameCount.toLocaleString() : '—'} label="games" />
       </div>
 
-      <div className={ready ? 'card feature daily-ready' : 'card feature'}>
-        <span className="tile-icon">{ready ? <Gift size={18} /> : <Clock size={18} />}</span>
+      <div className={justClaimed ? 'card feature daily-ready' : 'card feature'}>
+        <span className="tile-icon">{justClaimed ? <Gift size={18} /> : <Clock size={18} />}</span>
         <span className="feature-text">
           <span className="eyebrow" style={{ margin: 0 }}>Daily coins</span>
-          <strong>{ready ? `${DAILY_POINTS} coins are waiting` : 'Claimed for today'}</strong>
+          <strong>
+            {justClaimed ? `+${justClaimed} coins added` : `${DAILY_POINTS} coins, every day`}
+          </strong>
           <span className="muted">
-            {ready ? 'Free every day — spend them in the casino or the store.' : `Back in ${formatCountdown(wait)}.`}
+            {justClaimed
+              ? 'Added to your balance automatically.'
+              : `They land on their own when you open the site. Next lot in ${formatCountdown(wait)}.`}
           </span>
         </span>
-        <button className="btn btn-primary" onClick={claim} disabled={!ready || busy || !accountId}>
-          {busy ? 'Claiming…' : ready ? 'Claim' : 'Claimed'}
-        </button>
       </div>
-
-      <ErrorNote>{error}</ErrorNote>
 
       {!!announcements.length && (
         <section>
@@ -157,8 +142,6 @@ export default function HomePage({ router }) {
           ))}
         </div>
       </section>
-
-      {toast && <Toast>{toast}</Toast>}
     </div>
   );
 }

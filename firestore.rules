@@ -134,11 +134,13 @@ service cloud.firestore {
     }
 
     // Owners are members of every group by definition, and the app shows them
-    // in the member list — there is no hidden access.
+    // in the member list — there is no hidden access. `members` is read with a
+    // default because a group document missing the field would otherwise throw
+    // and deny the whole request rather than simply failing this check.
     function inGroup(gid) {
       return isOwner()
         || (exists(/databases/$(database)/documents/groups/$(gid))
-            && myId() in groupDoc(gid).members);
+            && myId() in groupDoc(gid).get('members', []));
     }
 
     // Group chats are open to their members. Anyone may ask to join by adding
@@ -164,17 +166,21 @@ service cloud.firestore {
     // a direct thread you are one half of. Nobody — Owner included — can read
     // other people's DMs.
     match /messages/{messageId} {
+      // Owners are checked first so group and lounge reads never depend on a
+      // lookup that could throw. DMs are still excluded below for everyone.
       allow read: if signedIn() && (
-        resource.data.thread == 'the-lounge'
-        || (resource.data.groupId != null && inGroup(resource.data.groupId))
-        || myId() in resource.data.thread.split('__')
+        resource.data.get('thread', '') == 'the-lounge'
+        || (resource.data.get('groupId', null) != null
+            && inGroup(resource.data.groupId))
+        || myId() in resource.data.get('thread', '').split('__')
       );
       allow create: if active()
         && request.resource.data.uid == myId()
         && (
-          request.resource.data.thread == 'the-lounge'
-          || (request.resource.data.groupId != null && inGroup(request.resource.data.groupId))
-          || myId() in request.resource.data.thread.split('__')
+          request.resource.data.get('thread', '') == 'the-lounge'
+          || (request.resource.data.get('groupId', null) != null
+              && inGroup(request.resource.data.groupId))
+          || myId() in request.resource.data.get('thread', '').split('__')
         );
       allow update: if false;
       allow delete: if mine(resource.data.uid)
