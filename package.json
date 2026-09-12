@@ -11,7 +11,11 @@
     "build:admin": "vite build --config vite.admin.config.js",
     "dev:portal": "vite --config vite.portal.config.js --port 5275",
     "build:portal": "vite build --config vite.portal.config.js",
-    "build:all": "vite build && vite build --config vite.admin.config.js && vite build --config vite.portal.config.js"
+    "build:all": "vite build && vite build --config vite.admin.config.js && vite build --config vite.portal.config.js",
+    "login": "firebase login --reauth",
+    "sites:create": "firebase hosting:sites:create astral-games1 && firebase hosting:sites:create astral-gateway",
+    "deploy": "npm run build:all && firebase deploy --only hosting",
+    "deploy:gateway": "npm run build:portal && firebase deploy --only hosting:astral-gateway"
   },
   "dependencies": {
     "firebase": "^12.12.1",
@@ -21,6 +25,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
+    "firebase-tools": "^15.30.0",
     "vite": "^5.4.11"
   }
 }

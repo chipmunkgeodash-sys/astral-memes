@@ -14,8 +14,18 @@ Firebase project: `astral-memes-zentraa`
 
 ## Deploy
 
-    npm run build
-    firebase deploy --only hosting
+`firebase-tools` is a devDependency, so `npm install` is all the setup there is.
+Sign in once, create the sites once, then deploy as often as you like:
+
+    npm run login          # browser sign-in; only when the token expires
+    npm run sites:create   # one-off, and harmless to re-run
+    npm run deploy         # builds all three bundles, ships all four sites
+
+`npm run deploy:gateway` ships just the portal, which is the fast one when only
+`portal/mirrors.js` changed.
+
+On Windows, `powershell -ExecutionPolicy Bypass -File .\deploy.ps1` does the
+whole sequence in one go, signing in first if the token has lapsed.
 
 `firebase.json` points both `astral-games1` and `astral-memes` at `dist/` —
 the same member build on two hosting sites, so a filter that catches one
