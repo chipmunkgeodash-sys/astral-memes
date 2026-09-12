@@ -3,3 +3,5 @@ dist/
 dist-admin/
 .firebase/
 dist-portal/
+firebase-debug.log
+*-debug.log

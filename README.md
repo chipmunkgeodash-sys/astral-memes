@@ -24,8 +24,10 @@ Sign in once, create the sites once, then deploy as often as you like:
 `npm run deploy:gateway` ships just the portal, which is the fast one when only
 `portal/mirrors.js` changed.
 
-On Windows, `powershell -ExecutionPolicy Bypass -File .\deploy.ps1` does the
-whole sequence in one go, signing in first if the token has lapsed.
+On Windows, `deploy.cmd` does the whole sequence in one go, signing in first if
+the token has lapsed. It is batch rather than PowerShell deliberately: where
+script execution is disabled, `npm` resolves to `npm.ps1` and is refused, and
+so is any `.ps1` wrapper. Plain `npm.cmd ...` works in that situation too.
 
 `firebase.json` points both `astral-games1` and `astral-memes` at `dist/` —
 the same member build on two hosting sites, so a filter that catches one
