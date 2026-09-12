@@ -2,3 +2,4 @@ node_modules/
 dist/
 dist-admin/
 .firebase/
+dist-portal/

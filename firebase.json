@@ -4,6 +4,12 @@
   },
   "hosting": [
     {
+      "site": "astral-games1",
+      "public": "dist",
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [{ "source": "**", "destination": "/index.html" }]
+    },
+    {
       "site": "astral-memes",
       "public": "dist",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
@@ -20,6 +26,12 @@
           "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
         }
       ]
+    },
+    {
+      "site": "astral-gateway",
+      "public": "dist-portal",
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [{ "source": "**", "destination": "/index.html" }]
     }
   ]
 }

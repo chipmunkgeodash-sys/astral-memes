@@ -1,0 +1,304 @@
+/* ============================================================================
+   Astral Gateway — its own small design system.
+   Deliberately shares nothing with src/styles.css: this site ships on its own
+   origin, holds no session, and should keep working if the member app's tokens
+   are rewritten tomorrow. Night-sky only, so no light palette here.
+   ========================================================================= */
+
+:root {
+  --accent: #7ee7d6;
+  --accent-dim: #3fb9a6;
+  --accent-soft: rgba(126, 231, 214, .12);
+  --accent-text: #032019;
+
+  --bg: #04070c;
+  --surface: rgba(14, 22, 32, .72);
+  --raised: rgba(20, 30, 42, .82);
+
+  --text: #e8f1f4;
+  --text-muted: #93a7b0;
+  --text-faint: #62757e;
+
+  --border: rgba(126, 231, 214, .14);
+  --border-strong: rgba(126, 231, 214, .3);
+
+  --warn: #ffb86b;
+  --down: #ff7a7a;
+
+  --r: 14px;
+  --r-lg: 20px;
+  --r-full: 999px;
+
+  --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A pool of light under the portal, so the ring is not floating on flat black. */
+.gateway {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(90% 60% at 50% 8%, rgba(63, 185, 166, .16), transparent 62%),
+    radial-gradient(60% 40% at 50% 100%, rgba(80, 120, 255, .10), transparent 70%);
+}
+
+.starfield {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.gateway-main {
+  position: relative;
+  z-index: 1;
+  width: min(760px, 100%);
+  margin: 0 auto;
+  padding: clamp(48px, 9vh, 96px) 20px 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+
+/* --- wordmark and ring ---------------------------------------------------- */
+
+.mark { text-align: center; display: grid; justify-items: center; gap: 14px; }
+
+.ring {
+  width: 128px;
+  height: 128px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(126, 231, 214, .06) 90deg,
+    var(--accent) 180deg,
+    rgba(126, 231, 214, .06) 270deg,
+    transparent 360deg
+  );
+  animation: spin 9s linear infinite;
+  filter: drop-shadow(0 0 26px rgba(126, 231, 214, .35));
+}
+.ring span {
+  width: 106px;
+  height: 106px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(126, 231, 214, .22), transparent 68%),
+    var(--bg);
+  box-shadow: inset 0 0 34px rgba(126, 231, 214, .22);
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.mark h1 {
+  margin: 0;
+  font-size: clamp(30px, 6vw, 46px);
+  font-weight: 700;
+  letter-spacing: -.02em;
+}
+.mark h1 em {
+  font-style: normal;
+  color: var(--accent);
+  text-shadow: 0 0 30px rgba(126, 231, 214, .45);
+}
+
+.tagline {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 15px;
+  max-width: 42ch;
+  line-height: 1.5;
+}
+
+/* --- the button ----------------------------------------------------------- */
+
+.enter {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 17px 54px;
+  border-radius: var(--r-full);
+  background: linear-gradient(180deg, var(--accent), var(--accent-dim));
+  color: var(--accent-text);
+  text-decoration: none;
+  font-weight: 700;
+  box-shadow:
+    0 0 0 1px rgba(126, 231, 214, .5),
+    0 14px 40px -12px rgba(126, 231, 214, .65);
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+.enter:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+  box-shadow:
+    0 0 0 1px rgba(126, 231, 214, .75),
+    0 20px 50px -12px rgba(126, 231, 214, .8);
+}
+.enter:active { transform: translateY(0); }
+.enter-label { font-size: 19px; letter-spacing: .04em; text-transform: uppercase; }
+.enter-host {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: .72;
+  font-variant-numeric: tabular-nums;
+}
+
+.alarm {
+  margin: 0;
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: var(--r);
+  border: 1px solid rgba(255, 184, 107, .3);
+  background: rgba(255, 184, 107, .08);
+  color: #ffd9ab;
+  font-size: 14px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+/* --- the doors ------------------------------------------------------------ */
+
+.doors {
+  width: 100%;
+  display: grid;
+  gap: 12px;
+}
+
+.door {
+  padding: 16px 18px;
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  backdrop-filter: blur(10px);
+  display: grid;
+  gap: 9px;
+  transition: border-color .16s ease, background .16s ease;
+}
+.door-up { border-color: var(--border-strong); background: var(--raised); }
+.door-down { opacity: .72; }
+
+.door-head { display: flex; align-items: center; gap: 9px; }
+.door-head h2 { margin: 0; font-size: 15px; font-weight: 650; }
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--text-faint);
+}
+.dot-checking { background: var(--warn); animation: pulse 1.1s ease-in-out infinite; }
+.dot-up { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+.dot-down { background: var(--down); }
+
+@keyframes pulse { 50% { opacity: .3; } }
+
+.door-status {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.door-note { margin: 0; color: var(--text-muted); font-size: 13.5px; line-height: 1.5; }
+
+.door-url {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  color: var(--accent);
+  word-break: break-all;
+}
+
+.door-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+
+.btn {
+  padding: 8px 15px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background .14s ease, border-color .14s ease, opacity .14s ease;
+}
+.btn:hover { background: var(--accent-soft); }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn:disabled:hover { background: transparent; }
+
+.btn-primary {
+  background: var(--accent-soft);
+  border-color: var(--accent-dim);
+  color: var(--accent);
+}
+.btn-primary:hover { background: rgba(126, 231, 214, .2); }
+
+.btn-ghost { border-color: var(--border); color: var(--text-muted); }
+
+/* --- footer --------------------------------------------------------------- */
+
+.gateway-foot {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 14px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.checked-at { font-size: 12.5px; color: var(--text-faint); }
+
+.fine {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-faint);
+  max-width: 52ch;
+  margin-inline: auto;
+}
+
+/* Focus rings that survive the dark background. */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring { animation: none; }
+  .dot-checking { animation: none; }
+  .enter { transition: none; }
+  .enter:hover { transform: none; }
+}
+
+@media (max-width: 480px) {
+  .enter { width: 100%; padding-inline: 24px; }
+  .door-status { margin-left: 0; width: 100%; }
+  .door-head { flex-wrap: wrap; }
+}

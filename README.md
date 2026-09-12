@@ -17,8 +17,46 @@ Firebase project: `astral-memes-zentraa`
     npm run build
     firebase deploy --only hosting
 
-`firebase.json` points the `astral-memes` site at `dist/` and the
-`astral-memes-zentraa` site at `player/` (the sandboxed game-player shim).
+`firebase.json` points both `astral-games1` and `astral-memes` at `dist/` —
+the same member build on two hosting sites, so a filter that catches one
+address does not take the app down — and the `astral-memes-zentraa` site at
+`player/` (the sandboxed game-player shim).
+
+`astral-games1` is the current primary. `astral-memes` is the original address
+and is filtered on some networks; it stays deployed for anyone it still works
+for. When a new address is needed, create another site, deploy `dist/` to it,
+and add it to the top of `portal/mirrors.js`:
+
+    firebase hosting:sites:create astral-games2
+    firebase deploy --only hosting:astral-games2
+
+## The gateway
+
+`portal/` is a site of its own — a single page whose only job is to forward
+you to whichever hostname is currently answering. Build and run it on its own:
+
+    npm run dev:portal        # localhost:5275
+    npm run build:portal      # -> dist-portal/
+    firebase deploy --only hosting:astral-gateway
+
+It lives at `astral-gateway.web.app`. That site does not exist until someone
+creates it, which is a one-off:
+
+    firebase hosting:sites:create astral-gateway
+
+It shares nothing with `src/` — no Firebase, no session, no games folder — so
+it builds to about 48 kB gzipped and loads on a bad connection. On open it
+sends a `no-cors` request to each address and shows which ones came back, then
+points ENTER at the one that answered, preferring whichever door you got
+through last (remembered in `localStorage`).
+
+The list of addresses lives in `portal/mirrors.js`, and that is the only file
+to touch when one changes. A green dot means the browser got *a* response, not
+that the real page loaded — a network answering with its own block page still
+reads as reachable.
+
+`npm run build:all` produces all three bundles (`dist/`, `dist-admin/`,
+`dist-portal/`).
 
 **Deploy to a preview channel first** to compare against the live app:
 
