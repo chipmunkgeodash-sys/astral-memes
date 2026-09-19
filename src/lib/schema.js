@@ -15,6 +15,8 @@ export const COL = {
   redemptions: 'redemptions',
   groups: 'groups',
   deletionLog: 'deletionLog',
+  comments: 'comments',
+  shorts: 'shorts',
   // paidContent/games.key holds the base64 AES-GCM key for the game library.
   paidContent: 'paidContent'
 };

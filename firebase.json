@@ -1,37 +1,303 @@
 {
+  "database": {
+    "instance": "astral-memes-zentraa-default-rtdb",
+    "rules": "database.rules.json"
+  },
   "firestore": {
     "rules": "firestore.rules"
   },
   "hosting": [
     {
-      "site": "astral-games1",
+      "site": "c7mh9f9g2u",
       "public": "dist",
-      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-      "rewrites": [{ "source": "**", "destination": "/index.html" }]
-    },
-    {
-      "site": "astral-memes",
-      "public": "dist",
-      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-      "rewrites": [{ "source": "**", "destination": "/index.html" }]
-    },
-    {
-      "site": "astral-owner",
-      "public": "dist-admin",
-      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-      "rewrites": [{ "source": "**", "destination": "/index.html" }],
-      "headers": [
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**",
+        "**/*.map"
+      ],
+      "rewrites": [
+        {
+          "source": "/hushmoto",
+          "destination": "/hushmoto.html"
+        },
+        {
+          "source": "/hushmoto/",
+          "destination": "/hushmoto.html"
+        },
         {
           "source": "**",
-          "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+          "destination": "/index.html"
+        }
+      ],
+      "redirects": [
+        {
+          "source": "/hush-moto",
+          "destination": "/hushmoto",
+          "type": 302
+        },
+        {
+          "source": "/hush-moto/",
+          "destination": "/hushmoto",
+          "type": 302
+        }
+      ],
+      "headers": [
+        {
+          "source": "/hushmoto",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/hushmoto/",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/hushmoto.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/hush-moto-game/index.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/hush-moto-game/assets/**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
         }
       ]
     },
     {
-      "site": "astral-gateway",
+      "site": "mq5bi2szqu",
+      "public": "dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**",
+        "**/*.map"
+      ],
+      "rewrites": [
+        {
+          "source": "/hushmoto",
+          "destination": "/hushmoto.html"
+        },
+        {
+          "source": "/hushmoto/",
+          "destination": "/hushmoto.html"
+        },
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "redirects": [
+        {
+          "source": "/hush-moto",
+          "destination": "/hushmoto",
+          "type": 302
+        },
+        {
+          "source": "/hush-moto/",
+          "destination": "/hushmoto",
+          "type": 302
+        }
+      ],
+      "headers": [
+        {
+          "source": "/hushmoto",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/hushmoto/",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/hushmoto.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/hush-moto-game/index.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/hush-moto-game/assets/**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "site": "cw2exkq6jo",
+      "public": "dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**",
+        "**/*.map"
+      ],
+      "rewrites": [
+        {
+          "source": "/hushmoto",
+          "destination": "/hushmoto.html"
+        },
+        {
+          "source": "/hushmoto/",
+          "destination": "/hushmoto.html"
+        },
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "redirects": [
+        {
+          "source": "/hush-moto",
+          "destination": "/hushmoto",
+          "type": 302
+        },
+        {
+          "source": "/hush-moto/",
+          "destination": "/hushmoto",
+          "type": 302
+        }
+      ],
+      "headers": [
+        {
+          "source": "/hushmoto",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/hushmoto/",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/hushmoto.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/hush-moto-game/index.html",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "/hush-moto-game/assets/**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=0, must-revalidate"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "site": "astral-owner",
+      "public": "dist-admin",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**",
+        "**/*.map"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "headers": [
+        {
+          "source": "**",
+          "headers": [
+            {
+              "key": "X-Robots-Tag",
+              "value": "noindex, nofollow"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "site": "astral-launchpad",
       "public": "dist-portal",
-      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-      "rewrites": [{ "source": "**", "destination": "/index.html" }]
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**",
+        "**/*.map"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
     }
   ]
 }

@@ -121,9 +121,49 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read: if signedIn();
       allow create: if active() && request.resource.data.uid == myId();
-      // Anyone signed in may like; only the author or a moderator changes the rest.
+      // Anyone signed in may like or react; only the author or a moderator
+      // changes the rest.
       allow update: if signedIn() && (
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'reactions'])
+        || mine(resource.data.uid) || can('moderateMemes')
+      );
+      allow delete: if mine(resource.data.uid) || can('moderateMemes') || isOwner();
+    }
+
+    // Comments hang off a post or short by id, or off a member's profile as a
+    // guestbook note (postId "profile_<accountId>"). Their text can't be edited;
+    // anyone signed in may like them.
+    match /comments/{commentId} {
+      allow read: if signedIn();
+      allow create: if active()
+        && request.resource.data.uid == myId()
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 500
+        && (exists(/databases/$(database)/documents/posts/$(request.resource.data.postId))
+            || exists(/databases/$(database)/documents/shorts/$(request.resource.data.postId))
+            || (request.resource.data.postId.matches('profile_.+')
+                && exists(/databases/$(database)/documents/accounts/$(request.resource.data.postId.split('profile_')[1]))));
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']);
+      allow delete: if mine(resource.data.uid) || can('moderateMemes') || isOwner()
+        || (resource.data.postId.matches('profile_.+') && mine(resource.data.postId.split('profile_')[1]));
+    }
+
+    // Shorts: vertical video posts. YouTube only; media is the video id.
+    match /shorts/{shortId} {
+      allow read: if signedIn();
+      allow create: if active()
+        && request.resource.data.uid == myId()
+        && request.resource.data.kind == 'youtube'
+        && request.resource.data.media is string
+        && request.resource.data.media.matches('[A-Za-z0-9_-]{6,20}')
+        && request.resource.data.caption is string
+        && request.resource.data.caption.size() <= 300
+        && request.resource.data.likes.size() == 0;
+      // Anyone may like or add a view; only the author or a moderator edits the rest.
+      allow update: if signedIn() && (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'views'])
         || mine(resource.data.uid) || can('moderateMemes')
       );
       allow delete: if mine(resource.data.uid) || can('moderateMemes') || isOwner();
@@ -162,25 +202,35 @@ service cloud.firestore {
       allow delete: if isOwner() || mine(resource.data.createdBy);
     }
 
+    // Group threads are named group_<groupId>. The group has to be read off the
+    // thread rather than the groupId field: the app queries on `thread` alone,
+    // and a list query is only allowed when the rule can be proven from the
+    // query's own filters.
+    function isGroupThread(thread) {
+      return thread.matches('group_.+');
+    }
+    function threadGroup(thread) {
+      return thread.split('group_')[1];
+    }
+
     // A message is readable in the global room, in a group you belong to, or in
     // a direct thread you are one half of. Nobody — Owner included — can read
     // other people's DMs.
     match /messages/{messageId} {
-      // Owners are checked first so group and lounge reads never depend on a
-      // lookup that could throw. DMs are still excluded below for everyone.
       allow read: if signedIn() && (
-        resource.data.get('thread', '') == 'the-lounge'
-        || (resource.data.get('groupId', null) != null
-            && inGroup(resource.data.groupId))
-        || myId() in resource.data.get('thread', '').split('__')
+        resource.data.thread == 'the-lounge'
+        || (isGroupThread(resource.data.thread)
+            && inGroup(threadGroup(resource.data.thread)))
+        || myId() in resource.data.thread.split('__')
       );
       allow create: if active()
         && request.resource.data.uid == myId()
         && (
-          request.resource.data.get('thread', '') == 'the-lounge'
-          || (request.resource.data.get('groupId', null) != null
+          request.resource.data.thread == 'the-lounge'
+          || (isGroupThread(request.resource.data.thread)
+              && request.resource.data.groupId == threadGroup(request.resource.data.thread)
               && inGroup(request.resource.data.groupId))
-          || myId() in request.resource.data.get('thread', '').split('__')
+          || myId() in request.resource.data.thread.split('__')
         );
       allow update: if false;
       allow delete: if mine(resource.data.uid)

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Hush Moto</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0d10'/%3E%3Cpath d='M16 14h9v14h14V14h9v36h-9V36H25v14h-9z' fill='%2339d98a'/%3E%3C/svg%3E" />
+<style>
+  :root {
+    --bg: #0b0d10;
+    --panel: rgba(14,17,21,0.82);
+    --panel-solid: #12151a;
+    --line: rgba(255,255,255,0.10);
+    --text: #e9eef4;
+    --dim: rgba(233,238,244,0.56);
+    --accent: #39d98a;
+    --accent2: #5fd2ff;
+    --warn: #ffb020;
+    --bad: #ff5a4a;
+    --vig: 0;
+    --font: 'Rajdhani', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%; overflow: hidden;
+    background: var(--bg); color: var(--text);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+    user-select: none; -webkit-user-select: none;
+  }
+  canvas#gl { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+
+  #ui { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+
+  /* ---------------- HUD ---------------- */
+  #hud { position: absolute; inset: 0; }
+  #hud::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 42%, rgba(0,0,0,0.55) 100%);
+    opacity: calc(var(--vig) * 0.85);
+    transition: opacity 0.1s linear;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    backdrop-filter: blur(9px) saturate(1.1);
+    -webkit-backdrop-filter: blur(9px) saturate(1.1);
+  }
+
+  /* score block */
+  #scoreboard {
+    position: absolute; top: 16px; left: 16px; padding: 11px 15px 12px;
+    min-width: 182px;
+  }
+  #scoreboard .row { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; }
+  #scoreboard .label { font-size: 10.5px; letter-spacing: 0.16em; color: var(--dim); font-weight: 600; }
+  #score-value { font-size: 30px; font-weight: 700; line-height: 1.05; letter-spacing: -0.01em; }
+  #best-value { font-size: 13px; color: var(--dim); font-weight: 600; }
+  #mult {
+    margin-top: 6px; font-size: 21px; font-weight: 700; color: var(--accent);
+    opacity: 0; transform: translateY(-4px); transition: opacity .18s ease, transform .18s ease;
+  }
+  #mult.active { opacity: 1; transform: none; }
+  #combo-list { margin-top: 3px; }
+  .combo-pending { font-size: 15px; font-weight: 700; color: var(--accent2); }
+  .combo-item {
+    font-size: 11.5px; color: var(--text); opacity: .82; letter-spacing: .04em;
+    padding: 1px 0 1px 9px; position: relative; font-weight: 600;
+  }
+  .combo-item::before {
+    content: ''; position: absolute; left: 0; top: 7px; width: 4px; height: 4px;
+    border-radius: 50%; background: var(--accent);
+  }
+  .combo-timer { margin-top: 5px; height: 2.5px; background: rgba(255,255,255,0.13); border-radius: 2px; overflow: hidden; }
+  .combo-timer i { display: block; height: 100%; background: var(--accent); transition: width .1s linear; }
+
+  /* minimap */
+  #map-wrap { position: absolute; top: 16px; right: 16px; padding: 7px; border-radius: 50%; }
+  #map-wrap.hidden { display: none; }
+  #minimap { width: 152px; height: 152px; display: block; border-radius: 50%; }
+
+  /* speedo */
+  #speedo-wrap { position: absolute; right: 16px; bottom: 16px; padding: 8px; border-radius: 50%; }
+  #speedo { width: 162px; height: 162px; display: block; }
+
+  /* bike + camera info */
+  #ride-info { position: absolute; left: 16px; bottom: 16px; padding: 10px 14px; min-width: 210px; }
+  #bike-name { font-size: 16px; font-weight: 700; letter-spacing: 0.02em; }
+  #bike-tag { font-size: 11px; color: var(--dim); font-weight: 600; letter-spacing: .05em; margin-top: 1px; }
+  #cam-row { margin-top: 7px; font-size: 11px; color: var(--dim); font-weight: 600; letter-spacing: .06em; }
+  #cam-name { color: var(--accent2); }
+  #controls-hint {
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line);
+    font-size: 10.5px; color: var(--dim); line-height: 1.75; font-weight: 600; letter-spacing: .04em;
+    max-height:130px;overflow:hidden;transition:max-height .3s,opacity .3s,margin .3s,padding .3s;
+  }
+  #hud.moving #controls-hint { max-height:0;opacity:0;margin:0;padding:0;border:0; }
+  #controls-hint b { color: var(--text); font-weight: 700; }
+
+  /* wheelie meter */
+  #police-panel { position:absolute;top:105px;left:50%;transform:translateX(-50%);width:320px;max-width:42vw;padding:10px 13px;border-top:2px solid #68b8ff; }
+  #police-panel[hidden] { display:none; }
+  #police-state { font-size:12px;font-weight:800;letter-spacing:.13em;color:#8dcbff; }
+  #police-detail { font-size:10px;color:var(--dim);margin-top:5px;line-height:1.4; }
+  #police-track { margin-top:7px;height:3px;background:#ffffff17;border-radius:3px;overflow:hidden; }
+  #police-fill { height:100%;background:#68b8ff;transition:width .1s; }
+  #police-panel[data-state="pursuit"], #police-panel[data-state="busted"] { border-color:#ff5369; }
+  #police-panel[data-state="pursuit"] #police-state, #police-panel[data-state="busted"] #police-state { color:#ff7386; }
+  #police-panel[data-state="search"] #police-state { color:#ffd178; }
+  #wheelie-bar {
+    position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%) translateY(10px);
+    width: 268px; padding: 8px 12px 10px; opacity: 0; transition: opacity .16s ease, transform .16s ease;
+  }
+  #wheelie-bar.show { opacity: 1; transform: translateX(-50%); }
+  #wheelie-bar .hdr { display: flex; justify-content: space-between; font-size: 10.5px; letter-spacing: .16em; color: var(--dim); font-weight: 700; }
+  #wheelie-time { color: var(--text); }
+  #wheelie-track { margin-top: 6px; height: 6px; border-radius: 4px; background: rgba(255,255,255,0.12); overflow: hidden; }
+  #wheelie-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 4px; transition: width .06s linear, background .15s linear; }
+  #wheelie-bar .scale { display:flex; justify-content: space-between; margin-top: 4px; font-size: 9px; color: var(--dim); letter-spacing: .1em; font-weight: 700;}
+
+  #air-info {
+    position: absolute; left: 50%; bottom: 150px; transform: translateX(-50%);
+    font-size: 19px; font-weight: 700; letter-spacing: .12em; color: var(--accent2);
+    opacity: 0; transition: opacity .12s ease; text-shadow: 0 2px 14px rgba(0,0,0,.6);
+  }
+  #air-info.show { opacity: 1; }
+
+  /* gate indicator */
+  #gate {
+    position: absolute; left: 50%; top: 18px; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 10px; padding: 8px 14px;
+    opacity: 0; transition: opacity .2s ease;
+  }
+  #gate.show { opacity: 1; }
+  #gate-arrow {
+    width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent;
+    border-bottom: 13px solid var(--accent); transition: transform .08s linear;
+  }
+  #gate-dist { font-size: 15px; font-weight: 700; }
+  #gate-streak { font-size: 11px; letter-spacing: .14em; color: var(--dim); font-weight: 700; }
+  #gate-streak.urgent { color: var(--bad); }
+
+  /* popups + banner */
+  #popups {
+    position: absolute; left: 50%; top: 27%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+  }
+  .popup {
+    font-size: 17px; font-weight: 700; letter-spacing: .13em;
+    text-shadow: 0 2px 12px rgba(0,0,0,.75); color: var(--text);
+    animation: pop .34s cubic-bezier(.2,1.3,.4,1);
+  }
+  .popup.good { color: var(--accent); }
+  .popup.great { color: var(--warn); font-size: 21px; }
+  .popup.score { color: var(--accent2); }
+  @keyframes pop { from { transform: scale(.7) translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  #banner {
+    position: absolute; left: 50%; top: 36%; transform: translate(-50%, 8px);
+    text-align: center; opacity: 0; transition: opacity .2s ease, transform .2s ease;
+  }
+  #banner.show { opacity: 1; transform: translate(-50%, 0); }
+  #banner-main { font-size: 46px; font-weight: 700; letter-spacing: .02em; text-shadow: 0 4px 26px rgba(0,0,0,.8); }
+  #banner-sub { font-size: 13px; letter-spacing: .22em; color: var(--warn); font-weight: 700; margin-top: 2px; }
+
+  /* crash overlay */
+  #crash {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px;
+    background: radial-gradient(ellipse at center, rgba(60,0,0,0.12), rgba(0,0,0,0.5));
+    opacity: 0; pointer-events: none; transition: opacity .25s ease;
+  }
+  #crash.show { opacity: 1; }
+  #crash h2 { margin: 0; font-size: 54px; letter-spacing: .1em; color: var(--bad); text-shadow: 0 4px 30px rgba(0,0,0,.85); }
+  #crash-reason { font-size: 15px; letter-spacing: .2em; color: var(--dim); font-weight: 700; }
+  #crash small { font-size: 12px; letter-spacing: .16em; color: var(--dim); margin-top: 10px; font-weight: 700; }
+
+  #hint {
+    position: absolute; left: 50%; bottom: 72px; transform: translateX(-50%) translateY(6px);
+    padding: 7px 16px; border-radius: 20px; background: rgba(10,12,15,.8);
+    border: 1px solid var(--line); font-size: 12px; font-weight: 700; letter-spacing: .1em;
+    opacity: 0; transition: opacity .2s ease, transform .2s ease;
+  }
+  #hint.show { opacity: 1; transform: translateX(-50%); }
+
+  #fps { position: absolute; right: 16px; top: 182px; font-size: 10.5px; color: var(--dim); font-weight: 700; letter-spacing: .1em; text-align: right; }
+
+  #boost-flash {
+    position: absolute; inset: 0; pointer-events: none; opacity: 0;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(95,210,255,0.20) 100%);
+    transition: opacity .18s ease;
+  }
+  #boost-flash.on { opacity: 1; }
+
+  /* ---------------- menus ---------------- */
+  #menu {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    background: linear-gradient(160deg, rgba(6,8,11,.90), rgba(9,13,18,.94));
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    pointer-events: auto; z-index: 20;
+  }
+  #menu.show { display: flex; }
+  .creator-line { color: #9bf2c6; font-size: 14px; margin: -4px 0 24px; }
+  .creator-line span { color: #9daebd; }
+  .multiplayer-btn { border-color: #71aafc80 !important; background: #71aafc15 !important; }
+  .multiplayer-btn small { display:block; font-size:9px; letter-spacing:.14em; color:#aacdff; margin-top:6px; }
+  .mp-directory { padding:18px; border:1px solid #58dfa63d; border-radius:16px; background:linear-gradient(120deg,#183a302b,#121e2c88); margin-bottom:20px; }
+  .live-dot { display:inline-block; width:8px; height:8px; background:#71efac; border-radius:50%; box-shadow:0 0 12px #71efac66; margin-right:8px; }
+  .mp-empty { color:#a8bac9; font-size:13px; line-height:1.7; padding:12px 0; }
+  .mp-server { padding:16px !important; border-color:#6dcea63b !important; background:#132b2699 !important; text-align:left; }
+  .mp-server:hover:not(:disabled) { background:#21503f !important; transform:translateY(-1px); }
+  .btn { transition:background .16s,border-color .16s,transform .16s; }
+  .btn:focus-visible { outline:2px solid #80ffd0; outline-offset:3px; }
+  #menu { background:radial-gradient(ellipse at 12% 0%,#15362ddb,transparent 60%),linear-gradient(140deg,#080e14ef,#0b1019f5); }
+  .mp-intro { font-size:22px; font-weight:700; margin:0 0 8px; }
+  .mp-note { color:#9caebe; font-size:12px; line-height:1.6; }
+  .mp-label { display:flex; flex-direction:column; gap:8px; font-size:12px; color:#bbcad5; margin:16px 0; }
+  .mp-label input { width:100%; box-sizing:border-box; background:#080e17; color:#f2f8fc; border:1px solid #344555; border-radius:8px; padding:12px; font:inherit; font-size:15px; }
+  .mp-label input:focus { outline:2px solid #39d98a; outline-offset:2px; }
+  .mp-columns { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .mp-card { border:1px solid #ffffff18; background:#ffffff04; padding:20px; border-radius:14px; }
+  .mp-card h3 { font-size:23px; margin:10px 0 18px; }
+  .mp-card .btn { width:100%; margin-top:10px; }
+  .mp-step { color:#9bf2c6; font-size:10px; letter-spacing:.16em; }
+  .mp-check { display:flex; align-items:center; gap:8px; font-size:12px; color:#a9b8c7; min-height:31px; }
+  #mp-status { border-left:2px solid #39d98a; padding:10px 12px; background:#39d98a0a; color:#cae8dc; font-size:13px; line-height:1.5; }
+  #mp-roster { list-style:none; padding:0; display:flex; flex-wrap:wrap; gap:8px; }
+  #mp-roster li { background:#ffffff0a; border-radius:8px; padding:9px 12px; font-size:13px; }
+  .mp-code-row, .mp-actions { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  #mp-share-code { font:700 32px monospace; letter-spacing:.18em; color:#9bf2c6; }
+  .mp-server { display:flex; justify-content:space-between; gap:12px; width:100%; margin-bottom:8px; }
+  .mp-server span { color:#a9b8c7; font-size:12px; }
+  .mp-connection { border-top:1px solid #ffffff16; margin-top:20px; padding-top:16px; font-size:12px; color:#a9b8c7; }
+  .mp-connection summary { cursor:pointer; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  #mp-badge { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:15; max-width:90vw; background:#0a1428de; border:1px solid #7296c955; color:#b8d7ff; padding:10px 16px; border-radius:30px; font:600 11px system-ui; cursor:pointer; }
+  #mp-badge.connected { color:#9bf2c6; border-color:#39d98a66; }
+  #game-menu { position:fixed; top:148px; left:18px; z-index:11; padding:10px 16px; border-radius:8px; background:#101820e8; color:#dceee4; border:1px solid #ffffff33; font:600 12px system-ui; cursor:pointer; }
+  #menu.show ~ #game-menu { display:none; }
+  #city-map {display:block;width:min(100%,650px);height:auto;margin:auto;border:1px solid #6aa18c55;border-radius:16px;cursor:crosshair;}
+  #map-open {position:fixed;right:20px;top:185px;z-index:15;border:1px solid #8ae6be44;background:#0e1b24e8;color:#c7f1df;border-radius:20px;padding:9px 15px;cursor:pointer;}
+  .custom-build {padding:16px;margin-bottom:14px;}
+  .custom-build summary {cursor:pointer;font-size:13px;font-weight:600;color:#a3f3ca;}
+  .custom-build[open] summary {margin-bottom:16px;}
+  .custom-grid {display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .mp-label select {padding:11px;background:#101c24;color:#e3f4ec;border:1px solid #40574d;border-radius:8px;max-width:100%;}
+  #custom-status {font-size:12px;color:#9deec8;}
+  #menu-garage {overflow:auto;}
+  @media(max-width:700px){.custom-grid{grid-template-columns:1fr;gap:0;}#map-open{top:150px;}}
+  #gl:focus { outline:none; }
+  @media(max-width:600px) { .mp-columns { grid-template-columns:1fr; } #menu-sub { display:none; } .creator-line span { display:block; margin-top:4px; } .mp-server { flex-direction:column; } }
+  #menu-box { width: min(880px, 92vw); max-height: 90vh; display: flex; flex-direction: column; }
+  #menu-box.garage-wide { width:min(1180px,94vw); }
+  #menu-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 18px; }
+  #menu-title { font-size: clamp(28px, 5vw, 52px); font-weight: 800; letter-spacing: -.04em; margin: 0; }
+  #menu-title span { color: var(--accent); }
+  #menu-sub { font-size: 11.5px; letter-spacing: .3em; color: var(--dim); font-weight: 700; }
+  .panel-page { display: none; }
+  .panel-page.show { display: block; }
+  #menu-main { display: none; grid-template-columns: 1fr 1.05fr; gap: 20px; }
+  #menu-main.show { display: grid; }
+  @media (max-width: 720px) { #menu-main.show { grid-template-columns: 1fr; } #stats { display: none !important; } }
+
+  .menu-btns { display: flex; flex-direction: column; gap: 9px; }
+  .btn {
+    pointer-events: auto; appearance: none; border: 1px solid var(--line);
+    background: rgba(255,255,255,0.045); color: var(--text);
+    padding: 13px 18px; border-radius: 11px; font-family: var(--font);
+    font-size: 15px; font-weight: 700; letter-spacing: .08em; text-align: left;
+    cursor: pointer; transition: background .14s ease, border-color .14s ease, transform .1s ease;
+  }
+  .btn:hover { background: rgba(57,217,138,0.13); border-color: rgba(57,217,138,0.45); }
+  .btn:active { transform: translateY(1px); }
+  .btn.primary { background: var(--accent); color: #07130d; border-color: transparent; }
+  .btn.primary:hover { background: #4ae79a; }
+  .btn.small { padding: 8px 13px; font-size: 12.5px; }
+
+  #stats { padding: 14px 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px 16px; align-content: start; }
+  #stats div { display: flex; flex-direction: column; font-size: 17px; font-weight: 700; }
+  #stats i { font-style: normal; font-size: 9.5px; letter-spacing: .16em; color: var(--dim); font-weight: 700; margin-bottom: 1px; }
+
+  .page-inner { padding: 16px; max-height: 62vh; overflow-y: auto; }
+  .page-inner::-webkit-scrollbar { width: 8px; }
+  .page-inner::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 4px; }
+
+  #garage-list { display: grid; gap: 10px; }
+  .garage-layout { display:grid;grid-template-columns:1.5fr 1fr;gap:14px;height:62vh;min-height:350px; }
+  .garage-layout .page-inner { min-height:0;padding:10px; }
+  #showroom { position:relative;overflow:hidden;background:#171b22; }
+  #showroom-canvas { width:100%;height:100%;display:block;cursor:grab;touch-action:none; }
+  #showroom-canvas:active { cursor:grabbing; }
+  .showroom-caption { position:absolute;left:20px;top:20px;right:20px;pointer-events:none; }
+  .showroom-caption small { color:var(--accent);font-size:9px;letter-spacing:.2em; }
+  #showroom-name { margin:6px 0;font-size:22px;line-height:1.15; }
+  #showroom-spec { font-size:10px;color:var(--dim); }
+  .showroom-help { position:absolute;left:20px;bottom:20px;color:var(--dim);font-size:10px;pointer-events:none; }
+  .garage-layout .bike-card { gap:10px;padding:11px; }
+  .garage-layout .bike-swatch { width:4px;height:64px;border-radius:3px; }
+  .garage-layout .bike-info h3 { font-size:14px; }
+  .garage-layout .bike-info p { font-size:10px; }
+  .garage-layout .bike-stats { gap:6px 12px; }
+  @media (max-width:720px) {
+    .garage-layout { grid-template-columns:1fr;height:66vh;grid-template-rows:30vh 1fr;min-height:0; }
+    #showroom-name { font-size:17px; }
+    .showroom-caption { top:10px;left:12px; }
+    .showroom-help { bottom:10px;left:12px; }
+  }
+  .bike-card {
+    pointer-events: auto; display: flex; gap: 14px; align-items: center; text-align: left;
+    padding: 12px; border-radius: 11px; border: 1px solid var(--line);
+    background: rgba(255,255,255,0.035); cursor: pointer; color: var(--text);
+    font-family: var(--font); transition: border-color .14s, background .14s;
+  }
+  .bike-card:hover { background: rgba(255,255,255,0.07); }
+  .bike-card.selected { border-color: var(--accent); background: rgba(57,217,138,0.10); }
+  .bike-swatch { width: 62px; height: 62px; border-radius: 10px; flex: 0 0 auto; }
+  .bike-info h3 { margin: 0 0 1px; font-size: 17px; font-weight: 700; }
+  .bike-info p { margin: 0 0 7px; font-size: 11.5px; color: var(--dim); font-weight: 600; letter-spacing: .05em; }
+  .bike-stats { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+  .bike-stats span { display: flex; flex-direction: column; font-size: 13px; font-weight: 700; }
+  .bike-stats i { font-style: normal; font-size: 9px; letter-spacing: .14em; color: var(--dim); }
+
+  .bind-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.055); font-size: 13.5px; font-weight: 600;
+  }
+  .key-btn {
+    pointer-events: auto; min-width: 118px; padding: 6px 11px; border-radius: 7px;
+    border: 1px solid var(--line); background: rgba(255,255,255,0.06); color: var(--text);
+    font-family: var(--font); font-size: 12px; font-weight: 700; letter-spacing: .08em; cursor: pointer;
+  }
+  .key-btn:hover { border-color: var(--accent); }
+  .key-btn.capturing { border-color: var(--warn); color: var(--warn); }
+
+  .set-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.055); font-size: 13.5px; font-weight: 600; }
+  .set-row select, .set-row input[type=range] { pointer-events: auto; font-family: var(--font); }
+  .set-row select {
+    background: rgba(255,255,255,0.07); border: 1px solid var(--line); color: var(--text);
+    padding: 6px 10px; border-radius: 7px; font-size: 12.5px; font-weight: 700;
+  }
+  .set-row input[type=range] { width: 170px; accent-color: var(--accent); }
+  .set-row input[type=checkbox] { pointer-events: auto; width: 17px; height: 17px; accent-color: var(--accent); }
+  .set-hint { font-size: 11px; color: var(--dim); font-weight: 600; margin-top: 10px; line-height: 1.6; }
+
+  .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .page-head h2 { margin: 0; font-size: 21px; letter-spacing: .1em; font-weight: 700; }
+
+  /* loading */
+  #loading {
+    position: fixed; inset: 0; z-index: 40; display: none;
+    align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+    background: linear-gradient(160deg, #0a0d11, #11161d);
+  }
+  #loading.show { display: flex; }
+  #loading h1 { margin: 0; font-size: 42px; letter-spacing: .3em; font-weight: 700; }
+  #loading h1 span { color: var(--accent); }
+  #loading-text { font-size: 12px; letter-spacing: .24em; color: var(--dim); font-weight: 700; }
+  .spinner {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 3px solid rgba(255,255,255,.12); border-top-color: var(--accent);
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.lab-section{padding:18px;background:linear-gradient(145deg,#152820,#101b26);border:1px solid #568b7455;border-radius:14px}.lab-section h3{font-size:12px;letter-spacing:.12em;color:#91efc4;margin:0 0 18px}.lab-section .btn{margin:4px 4px 4px 0;letter-spacing:0}.lab-section .mp-label{margin:10px 0}.lab-section input[type=color]{height:34px;width:100%;padding:2px;background:#17232c;border:1px solid #456354;border-radius:7px}.lab-section select{width:100%;padding:9px;background:#0b1720;color:#eafff4;border:1px solid #416553;border-radius:7px}.lab-section input[type=range]{width:100%;accent-color:#6bffc2}.lab-section p,#lab-records,#lab-badges{font-size:12px;line-height:1.8;color:#c3d8d0}#lab-status{border-left:2px solid #70e9ae;padding:10px;font-size:13px;background:#73ffb50a}.trick-key{display:flex;gap:16px;align-items:center;padding:8px;border-bottom:1px solid #789c8822}.trick-key kbd{padding:6px 10px;background:#2a453b;border-radius:5px}#lab-hud{position:absolute;top:18px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11px;background:#091a23cc;border:1px solid #6ee1b344;border-radius:12px;padding:10px 18px;pointer-events:none;color:#bdebd5;white-space:nowrap}#lab-hud strong{letter-spacing:.14em;color:#e4fff1}#photo-tools{position:fixed;z-index:9999;bottom:20px;left:50%;transform:translateX(-50%);background:#0d1c26ed;border:1px solid #72dbae;padding:18px;border-radius:16px;color:#e9fff5;display:flex;align-items:center;gap:12px}#photo-tools[hidden]{display:none}#photo-tools label{display:flex;flex-direction:column;font-size:11px}#photo-tools strong{font-size:11px;letter-spacing:.12em}@media(max-width:650px){.lab-grid{grid-template-columns:1fr}#photo-tools{width:90%;flex-wrap:wrap}#lab-hud{top:82px;font-size:9px}#police-panel{top:158px}}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+
+<div id="ui">
+  <div id="hud">
+    <div id="scoreboard" class="panel">
+      <div class="row"><span class="label">SCORE</span><span id="best-value">0</span></div>
+      <div id="score-value">0</div>
+      <div id="mult"><span id="mult-value">×1.00</span></div>
+      <div id="combo-list"></div>
+    </div>
+
+    <div id="map-wrap" class="panel"><canvas id="minimap" width="152" height="152"></canvas></div>
+    <div id="fps">60 FPS</div>
+    <div id="police-panel" class="panel" role="status" aria-live="polite">
+      <div id="police-state">CITY PATROL</div><div id="police-detail">Blue dots are patrols</div>
+      <div id="police-track"><div id="police-fill"></div></div>
+    </div>
+
+    <div id="speedo-wrap" class="panel"><canvas id="speedo" width="162" height="162"></canvas></div>
+
+    <div id="ride-info" class="panel">
+      <div id="bike-name">Sur-Ron Light Bee X</div>
+      <div id="bike-tag">Electric mini dirt · 60 kg · 75 km/h</div>
+      <div id="cam-row">CAMERA · <span id="cam-name">Chase</span></div>
+      <div id="controls-hint">
+        <b>W</b> throttle &nbsp; <b>SPACE</b> brake &nbsp; <b>A/D</b> lean<br />
+        <b>SHIFT</b> wheelie &nbsp; <b>A / D</b> inverted turn &nbsp; <b>S</b> rear brake<br />
+        <b>CTRL</b> boost &nbsp; Lean back for fender scrapes; tap S to recover<br />
+        <b>R</b> reset &nbsp; <b>C</b> camera &nbsp; <b>N</b> bike &nbsp; <b>ESC</b> menu<br />
+        <b>DRAG MOUSE</b> look around &nbsp; <b>L</b> lock look
+      </div>
+    </div>
+
+    <div id="wheelie-bar" class="panel">
+      <div class="hdr"><span>WHEELIE</span><span id="wheelie-time">0.00s</span></div>
+      <div id="wheelie-track"><div id="wheelie-fill"></div></div>
+      <div class="scale"><span>BALANCE</span><span>LOOP OUT</span></div>
+    </div>
+    <div id="air-info">AIR</div>
+
+    <div id="gate" class="panel">
+      <div id="gate-arrow"></div>
+      <div id="gate-dist">0m</div>
+      <div id="gate-streak">GATE</div>
+    </div>
+
+    <div id="popups"></div>
+    <div id="banner"><div id="banner-main"></div><div id="banner-sub"></div></div>
+    <div id="hint"></div>
+    <div id="boost-flash"></div>
+
+    <div id="crash">
+      <h2>CRASHED</h2>
+      <div id="crash-reason">Low side</div>
+      <small>PRESS <b>R</b> TO RESET · AUTO-RESET IN A MOMENT</small>
+    </div>
+  </div>
+
+  <div id="menu">
+    <div id="menu-box">
+      <div id="menu-head">
+        <h1 id="menu-title">HUSH<span>MOTO</span></h1>
+        <div id="menu-sub">ASTRAL ORIGINAL · FREE RIDE</div>
+      </div>
+      <p class="creator-line">I made this game <span>— Hush Moto, by the creator of Astral.</span></p>
+
+      <div id="menu-main" class="panel-page show">
+        <div class="menu-btns">
+          <button class="btn primary" id="btn-ride">Ride solo</button>
+          <button class="btn multiplayer-btn" id="btn-multiplayer">Multiplayer <small>HOST / JOIN SERVERS ↗</small></button>
+          <button class="btn primary" id="btn-resume">Resume</button>
+          <button class="btn" id="btn-restart">Restart ride</button>
+          <button class="btn" id="btn-garage">Garage / Customize</button><button class="btn" id="btn-map">City map</button>
+          <button class="btn" id="btn-controls">Controls</button>
+          <button class="btn" id="btn-settings">Settings</button>
+        </div>
+        <div id="stats" class="panel"></div>
+      </div>
+
+      <div id="menu-multiplayer" class="panel-page">
+        <div class="page-head"><h2>RIDE TOGETHER</h2><button class="btn small btn-back">Back</button></div>
+        <div class="panel page-inner mp-lobby">
+          <p class="mp-intro">One city. Your crew. Up to 8 riders.</p>
+          <p class="mp-note">Free roam together. Traffic, police and stunt scores are local to each rider; riders pass through each other.</p>
+          <section class="mp-directory"><div class="page-head"><h3><span class="live-dot"></span> Public servers</h3><button class="btn small" id="mp-refresh">Refresh</button></div>
+          <p class="mp-note" id="mp-directory-status" role="status">Finding public servers…</p>
+          <div id="mp-servers"></div></section>
+          <div id="mp-create">
+            <label class="mp-label">Rider name<input id="mp-name" maxlength="24" placeholder="Your rider name" autocomplete="nickname"></label>
+            <div class="mp-columns">
+              <section class="mp-card"><span class="mp-step">01 / START A SESSION</span><h3>Host a server</h3>
+                <label class="mp-label">Server name<input id="mp-room-name" maxlength="32" value="Night riders"></label>
+                <label class="mp-check"><input type="checkbox" id="mp-private"> Unlisted · join by code only</label>
+                <button class="btn primary" id="mp-host">Host server ↗</button>
+              </section>
+              <section class="mp-card"><span class="mp-step">02 / FIND YOUR CREW</span><h3>Join a server</h3>
+                <label class="mp-label">Room code<input id="mp-code" maxlength="6" placeholder="A1B2C3" autocomplete="off" spellcheck="false"></label>
+                <p class="mp-note">Get a six-character code from your host.</p>
+                <button class="btn" id="mp-join">Join server →</button>
+              </section>
+            </div>
+          </div>
+          <section id="mp-connected" hidden>
+            <span class="mp-step">CONNECTED / YOUR SERVER</span><h3 id="mp-room-title"></h3>
+            <div class="mp-code-row"><strong id="mp-share-code"></strong><button class="btn small" id="mp-copy">Copy code</button></div>
+            <ul id="mp-roster"></ul>
+            <div class="mp-actions"><button class="btn primary" id="mp-ride">Back to the ride ↗</button><button class="btn" id="mp-leave">Leave server</button></div>
+            <p class="mp-note">The server closes when the host leaves. Keeping the game tab open keeps your session available.</p>
+          </section>
+          <p id="mp-status" role="status" aria-live="polite">Host a session, enter a room code, or refresh the server list.</p>
+
+          <details class="mp-connection"><summary>Connection settings</summary>
+            <button class="btn small" id="mp-reset-connection">Restore automatic connection</button>
+            <label class="mp-label">Advanced connection override<input id="mp-endpoint" type="text" spellcheck="false" value="firebase"></label>
+            <p class="mp-note">The automatic connection works across Astral sites. Only change this if you run your own server.</p>
+          </details>
+        </div>
+      </div>
+
+      <div id="menu-map" class="panel-page">
+        <div class="page-head"><h2>CITY MAP</h2><button class="btn small btn-back">Back</button></div>
+        <div class="panel page-inner"><p class="mp-note">Explore the city · mint = you · blue = your crew · gold = waypoint</p>
+          <canvas id="city-map" width="700" height="700" aria-label="City map. Click to place a waypoint."></canvas>
+          <div class="mp-actions"><p id="map-distance" role="status">Click the map to set a waypoint.</p><button class="btn small" id="map-clear">Clear waypoint</button></div>
+          <label class="mp-label">Map atmosphere<select id="map-atmosphere"><option value="day">Clear day</option><option value="sunset">Golden evening</option><option value="night">Blue night</option></select></label>
+        </div>
+      </div>
+      <div id="menu-garage" class="panel-page">
+        <div class="page-head"><h2>GARAGE</h2><button class="btn small btn-back">Back</button></div>
+        <details class="custom-build panel"><summary>Customize selected bike · Theme, battery &amp; controller</summary><div class="page-head"><h3>YOUR BUILD</h3><span class="mp-step">SAVED PER BIKE</span></div>
+          <div class="custom-grid">
+            <label class="mp-label">Theme · plastics & decals<select id="custom-paint"><option value="stock">Factory</option><option value="mint">Mint</option><option value="ice">Ice blue</option><option value="ember">Ember</option><option value="violet">Violet</option><option value="white">Pearl white</option></select></label>
+            <label class="mp-label">Battery<select id="custom-battery"><option value="stock">Stock pack</option><option value="chi">Chi performance pack · +15% speed / +50% range</option></select></label>
+            <label class="mp-label">Controller<select id="custom-controller"><option value="stock">Stock controller</option><option value="ebmx">EBMX-inspired sport tune · +30% power</option></select></label>
+          </div><p class="mp-note">Game upgrades inspired by Chi Battery and EBMX. Performance values are fictional tuning, not product specifications. Electric upgrades apply to electric bikes.</p>
+          <div class="mp-actions"><button class="btn primary" id="custom-apply">Apply build</button><button class="btn" id="custom-reset">Reset to stock</button><span id="custom-status" role="status"></span></div>
+        </details>
+        <div class="garage-layout">
+          <div id="showroom" class="panel">
+            <canvas id="showroom-canvas" aria-label="Interactive motorcycle preview"></canvas>
+            <div class="showroom-caption"><small id="showroom-count">YOUR GARAGE</small><h3 id="showroom-name"></h3><div id="showroom-spec"></div></div>
+            <div class="showroom-help">Drag to rotate · Scroll to zoom</div>
+          </div>
+          <div class="panel page-inner"><div id="garage-list"></div></div>
+        </div>
+      </div>
+
+      <div id="menu-controls" class="panel-page">
+        <div class="page-head"><h2>CONTROLS</h2><button class="btn small btn-back">Back</button></div>
+        <div class="panel page-inner">
+          <div id="controls-list"></div>
+          <div style="margin-top:12px; display:flex; gap:8px;">
+            <button class="btn small" id="btn-reset-binds">Restore defaults</button>
+          </div>
+          <div class="set-hint">Click a key to rebind it, then press the new key. ESC cancels.</div>
+        </div>
+      </div>
+
+      <div id="menu-settings" class="panel-page">
+        <div class="page-head"><h2>SETTINGS</h2><button class="btn small btn-back">Back</button></div>
+        <div class="panel page-inner">
+          <div class="set-row"><span>Master volume</span>
+            <span style="display:flex;align-items:center;gap:10px;">
+              <input type="range" id="set-volume" min="0" max="100" value="75" />
+              <b id="set-volume-val" style="min-width:42px;text-align:right;">75%</b>
+            </span>
+          </div>
+          <div class="set-row"><span>Graphics quality</span>
+            <select id="set-quality">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+          <div class="set-row"><span>Shadows</span><input type="checkbox" id="set-shadows" checked /></div>
+          <div class="set-row"><span>Traffic density</span>
+            <select id="set-traffic">
+              <option value="low">Low</option>
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+          <div class="set-row"><span>Rider assist (lean limiter)</span><input type="checkbox" id="set-assist" checked /></div>
+          <div class="set-row"><span>Police patrols and pursuits</span><input type="checkbox" id="set-police" checked /></div>
+          <div class="set-row"><span>Invert lean (A / D)</span><input type="checkbox" id="set-invert-lean" /></div>
+          <div class="set-row"><span>Invert free-look Y axis</span><input type="checkbox" id="set-invert-look" /></div>
+          <div class="set-row"><span>Free-look sensitivity</span>
+            <span style="display:flex;align-items:center;gap:10px;">
+              <input type="range" id="set-looksens" min="20" max="250" value="100" />
+              <b id="set-looksens-val" style="min-width:42px;text-align:right;">100%</b>
+            </span>
+          </div>
+          <div class="set-hint">
+            Hold any mouse button on the game and move to look around; <b>L</b> locks the mouse for
+            continuous free look. Traffic density takes effect after a page reload. Turn shadows off
+            or drop quality if the frame rate dips.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="loading" class="show">
+  <h1>HUSH<span>MOTO</span></h1>
+  <div class="spinner"></div>
+  <div id="loading-text">Loading…</div>
+</div>
+
+<button id="mp-badge" type="button" aria-label="Open multiplayer lobby">SOLO · MULTIPLAYER</button>
+<button id="map-open" type="button" aria-label="Open city map">Map / M</button>
+<button id="game-menu" type="button" aria-label="Open pause menu">☰ Menu / Esc</button>
+<script src="dist/game.js"></script>
+</body>
+</html>

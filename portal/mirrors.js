@@ -8,34 +8,10 @@
 // To add a door later — a custom domain, a second Firebase site — drop it in
 // this list. Nothing else needs editing.
 export const MIRRORS = [
-  {
-    id: 'games1',
-    url: 'https://astral-games1.web.app',
-    label: 'Primary',
-    note: 'The current address. Use this one unless it refuses to load.'
-  },
-  {
-    id: 'games1-firebaseapp',
-    url: 'https://astral-games1.firebaseapp.com',
-    label: 'Mirror',
-    note: 'The same site on a second hostname, served from the same deploy.'
-  },
-  {
-    id: 'web-app',
-    url: 'https://astral-memes.web.app',
-    label: 'Old address',
-    note: 'The original hostname. Filtered on some networks — kept for anyone it still works for.'
-  }
+  { id: 'c7mh9f9g2u', url: 'https://c7mh9f9g2u.web.app' },
+  { id: 'mq5bi2szqu', url: 'https://mq5bi2szqu.web.app' },
+  { id: 'cw2exkq6jo', url: 'https://cw2exkq6jo.web.app' }
 ];
-
-// The sandboxed game player is its own site, so it is worth listing separately —
-// it is sometimes reachable when the main app is not.
-export const PLAYER = {
-  id: 'player',
-  url: 'https://astral-memes-zentraa.web.app',
-  label: 'Game player',
-  note: 'The standalone player shim. No feed, no chat — games only.'
-};
 
 export const LAST_GOOD_KEY = 'astral.gateway.last-good';
 

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useHoverCard } from './HoverCard';
 
 export function PageHead({ eyebrow, title, actions }) {
   return (
@@ -116,16 +117,22 @@ export function navigateTo(path) {
   window.scrollTo(0, 0);
 }
 
-// A member's name, linked to their profile. `to` is a username or a uid.
+// A member's name, linked to their profile, with a mini profile on hover.
+// `to` is a username or a uid.
 export function UserLink({ to, children, className = '' }) {
+  const { handlers, card } = useHoverCard(to);
   if (!to) return <strong className={className}>{children}</strong>;
   return (
-    <button
-      className={`user-link ${className}`}
-      onClick={(e) => { e.stopPropagation(); navigateTo(`/u/${encodeURIComponent(to)}`); }}
-      type="button"
-    >
-      {children}
-    </button>
+    <>
+      <button
+        className={`user-link ${className}`}
+        onClick={(e) => { e.stopPropagation(); navigateTo(`/u/${encodeURIComponent(to)}`); }}
+        type="button"
+        {...handlers}
+      >
+        {children}
+      </button>
+      {card}
+    </>
   );
 }

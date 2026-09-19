@@ -1,11 +1,19 @@
 // Initials on a tinted circle, or the member's picture when they have one.
-export default function Avatar({ profile, size = 36 }) {
+// Pass `online` to show a presence dot in the corner.
+export default function Avatar({ profile, size = 36, online }) {
   const name = profile?.displayName || profile?.username || 'Astral member';
   const initials = name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'A';
   const style = { width: size, height: size, fontSize: Math.round(size * 0.38) };
 
-  if (profile?.picture) {
-    return <img className="avatar" style={style} src={profile.picture} alt="" width={size} height={size} />;
-  }
-  return <span className="avatar" style={style} aria-hidden="true">{initials}</span>;
+  const face = profile?.picture
+    ? <img className="avatar" style={style} src={profile.picture} alt="" width={size} height={size} />
+    : <span className="avatar" style={style} aria-hidden="true">{initials}</span>;
+
+  if (online === undefined) return face;
+  return (
+    <span className="avatar-wrap" style={{ width: size, height: size }}>
+      {face}
+      <span className={online ? 'presence on' : 'presence'} title={online ? 'Online' : 'Offline'} />
+    </span>
+  );
 }

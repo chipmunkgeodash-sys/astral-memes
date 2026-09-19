@@ -2,9 +2,20 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), {
+    name: 'hush-moto-page',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (/^\/hushmoto\/?(?:\?|$)/.test(req.url)) req.url = req.url.replace(/^\/hushmoto\/?/, '/hushmoto.html');
+        next();
+      });
+    },
+  }],
   // The original deploy used relative asset URLs (./assets/...), so keep that.
   base: './',
+  server: {
+    proxy: { '/multiplayer': { target: 'ws://127.0.0.1:8123', ws: true } }
+  },
   build: {
     outDir: 'dist',
     // Ship source maps this time. The original build did not, which is the

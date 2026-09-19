@@ -10,7 +10,31 @@ Firebase project: `astral-memes-zentraa`
 ## Run it
 
     npm install
+    npm --prefix "hush moto" ci
     npm run dev
+
+## Hush Moto and Studio
+
+Hush Moto runs at `/hushmoto`, with multiplayer, motorcycle and rider customization,
+trick combos, charging bays, and gas stations. Studio runs at `/studio` and includes
+50 free creator tools. See [the feature list](STUDIO-FEATURES.md),
+[Ride Lab controls](hush%20moto/RIDE-LAB.md), and
+[multiplayer setup](hush%20moto/MULTIPLAYER.md).
+
+Install dependencies in both folders before building a fresh checkout:
+
+    npm ci
+    npm --prefix "hush moto" ci
+    npm run build
+
+Run the checks with:
+
+    npm run test:studio
+    npm --prefix "hush moto" test
+
+The build generates the public game files automatically. Firebase sign-in tokens,
+local screenshots, dependency folders, and generated bundles are not committed.
+Model creator credits and license notes are included alongside the assets.
 
 ## Deploy
 
@@ -19,9 +43,9 @@ Sign in once, create the sites once, then deploy as often as you like:
 
     npm run login          # browser sign-in; only when the token expires
     npm run sites:create   # one-off, and harmless to re-run
-    npm run deploy         # builds all three bundles, ships all four sites
+    npm run deploy         # builds all three bundles, ships all five sites
 
-`npm run deploy:gateway` ships just the portal, which is the fast one when only
+`npm run deploy:gateway` ships just the launchpad, which is the fast one when only
 `portal/mirrors.js` changed.
 
 On Windows, `deploy.cmd` does the whole sequence in one go, signing in first if
@@ -29,32 +53,36 @@ the token has lapsed. It is batch rather than PowerShell deliberately: where
 script execution is disabled, `npm` resolves to `npm.ps1` and is refused, and
 so is any `.ps1` wrapper. Plain `npm.cmd ...` works in that situation too.
 
-`firebase.json` points both `astral-games1` and `astral-memes` at `dist/` —
-the same member build on two hosting sites, so a filter that catches one
-address does not take the app down — and the `astral-memes-zentraa` site at
-`player/` (the sandboxed game-player shim).
+`firebase.json` sends the member build in `dist/` to three hosting sites —
+`c7mh9f9g2u`, `mq5bi2szqu` and `cw2exkq6jo` — so a filter that catches one
+address does not take the app down. `astral-owner` gets `dist-admin/` and
+`astral-launchpad` gets `dist-portal/`.
 
-`astral-games1` is the current primary. `astral-memes` is the original address
-and is filtered on some networks; it stays deployed for anyone it still works
-for. When a new address is needed, create another site, deploy `dist/` to it,
+`astral-games1` and `astral-memes` are old addresses. They are no longer
+deployed to and stay frozen on their last release.
+
+Source maps (`*.map`) are built but not uploaded: they are only for debugging,
+and every deploy stores a full copy of each site against the Hosting storage
+quota. The games library in `dist/games` is most of that size, so keep the
+number of sites the member build goes to small, and keep release history short
+(Hosting → Release history → Release storage settings in the Firebase console).
+
+When a new address is needed, create another site, add it to `firebase.json`,
 and add it to the top of `portal/mirrors.js`:
 
-    firebase hosting:sites:create astral-games2
-    firebase deploy --only hosting:astral-games2
+    firebase hosting:sites:create <new-site-id>
+    firebase deploy --only hosting:<new-site-id>
 
-## The gateway
+## The launchpad
 
 `portal/` is a site of its own — a single page whose only job is to forward
 you to whichever hostname is currently answering. Build and run it on its own:
 
     npm run dev:portal        # localhost:5275
     npm run build:portal      # -> dist-portal/
-    firebase deploy --only hosting:astral-gateway
+    firebase deploy --only hosting:astral-launchpad
 
-It lives at `astral-gateway.web.app`. That site does not exist until someone
-creates it, which is a one-off:
-
-    firebase hosting:sites:create astral-gateway
+It lives at `astral-launchpad.web.app`.
 
 It shares nothing with `src/` — no Firebase, no session, no games folder — so
 it builds to about 48 kB gzipped and loads on a bad connection. On open it
@@ -72,7 +100,7 @@ reads as reachable.
 
 **Deploy to a preview channel first** to compare against the live app:
 
-    firebase hosting:channel:deploy rebuild --only astral-memes
+    firebase hosting:channel:deploy rebuild --only c7mh9f9g2u
 
 ## What was recovered exactly
 

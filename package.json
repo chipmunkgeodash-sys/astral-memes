@@ -4,6 +4,11 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "build:hush": "node scripts/build-hush-moto.mjs",
+    "predev": "npm run build:hush",
+    "prebuild": "npm run build:hush",
+    "prebuild:all": "npm run build:hush",
+    "serve:hush": "npm --prefix \"hush moto\" run serve:multiplayer",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
@@ -13,9 +18,10 @@
     "build:portal": "vite build --config vite.portal.config.js",
     "build:all": "vite build && vite build --config vite.admin.config.js && vite build --config vite.portal.config.js",
     "login": "firebase login --reauth",
-    "sites:create": "firebase hosting:sites:create astral-games1 && firebase hosting:sites:create astral-gateway",
+    "sites:create": "firebase hosting:sites:create c7mh9f9g2u && firebase hosting:sites:create mq5bi2szqu && firebase hosting:sites:create cw2exkq6jo && firebase hosting:sites:create astral-launchpad",
     "deploy": "npm run build:all && firebase deploy --only hosting",
-    "deploy:gateway": "npm run build:portal && firebase deploy --only hosting:astral-gateway"
+    "deploy:gateway": "npm run build:portal && firebase deploy --only hosting:astral-launchpad",
+    "test:studio": "node --test scripts/studio.test.mjs"
   },
   "dependencies": {
     "firebase": "^12.12.1",

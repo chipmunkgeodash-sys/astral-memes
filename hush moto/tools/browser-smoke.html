@@ -1,0 +1,243 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Hush Moto render and frame-rate checks</title>
+<style>
+body{margin:0;background:#17212c;color:#e7eff6;font:14px system-ui}header{padding:12px 18px;display:flex;gap:15px;align-items:center}button,select{padding:7px}iframe{display:block;width:100%;height:calc(100vh - 120px);border:0}pre{margin:0;padding:10px 18px;white-space:pre-wrap}
+</style>
+<header><strong>Model inspection</strong><select id="bike" aria-label="Bike"></select><button id="side">Side view</button><button id="front">Front quarter</button><button id="rider">Rider / steering</button><button id="test">Check frame rates</button><button id="city">Check crossings</button><button id="bridge">Check bridge</button><span id="status">Loading game…</span></header>
+<iframe id="game" src="../index.html" title="Game render"></iframe><pre id="report"></pre>
+<div id="gallery" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px"></div>
+<script type="module">
+const frame = document.querySelector('#game'), select = document.querySelector('#bike');
+const status = document.querySelector('#status'), report = document.querySelector('#report');
+let g, quarter = false;
+let showRider = false;
+const allButton=document.createElement('button');allButton.textContent='Check all bikes';document.querySelector('header').append(allButton);
+const wheelieButton=document.createElement('button');wheelieButton.textContent='Check wheelie';document.querySelector('header').append(wheelieButton);
+const poseButton=document.createElement('button');poseButton.textContent='Wheelie turn poses';document.querySelector('header').append(poseButton);
+const scrapeButton=document.createElement('button');scrapeButton.textContent='Check fender scrape';document.querySelector('header').append(scrapeButton);
+scrapeButton.onclick=async()=>{
+  showRider=true;await inspect();const b=g.bike;
+  const floor=g.world.queryGround(b.pos.x,b.pos.z,100,{}).y;
+  b.pitch=1.25;b.frontDown=false;b.rearDown=true;b.grounded=true;
+  b.vel.z=8;b.vLong=8;
+  b.pos.y=floor+b.cfg.rR-(b.cfg.rR-b.h)*Math.cos(b.pitch)+b.b*Math.sin(b.pitch);
+  b.updateFenderScrape(1/240);
+  for(let i=0;i<20;i++){g.model.update(b,1/60,0);g.effects.update(1/60,b,g.model);}
+  document.querySelector('#gallery').replaceChildren();capturePose('Fender scrape contact and sparks');
+  report.textContent=`${b.fenderScraping&&!b.crashed?'PASS':'FAIL'} scrape contact at ${(b.pitch*180/Math.PI).toFixed(1)}°, intensity ${b.scrapeIntensity.toFixed(2)}, no crash`;
+};
+const spinButton=document.createElement('button');spinButton.textContent='Wheel spin poses';document.querySelector('header').append(spinButton);
+const turnButton=document.createElement('button');turnButton.textContent='Ride turn sequence';document.querySelector('header').append(turnButton);
+turnButton.onclick=async()=>{
+  showRider=true;await inspect();document.querySelector('#gallery').replaceChildren();
+  const b=g.bike,query=g.world.queryGround,collide=g.world.collideCircle;
+  g.world.collideCircle=(x,z,y,r,out={})=>Object.assign(out,{hit:false});
+  b.vel.z=10;b.omegaF=10/b.cfg.rF;b.omegaR=10/b.cfg.rR;
+  try{
+    for(let i=0;i<960&&!b.crashed;i++){
+      const t=i/240,steer=.45*Math.sin(t*Math.PI/2);
+      b.step(1/240,{steer,throttle:.1,brake:0,rearBrake:0,wheelie:false,reverse:false,boost:false});
+      g.model.update(b,1/240,0);
+      if(i%240===239)capturePose(`Turn ${i/240+1/240}s · ${(b.roll*180/Math.PI).toFixed(1)}° lean`);
+    }
+    report.textContent=`${b.crashed?'FAIL':'PASS'} turn entry, reversal and exit; rear slip ${(Math.atan2(b.vLat-b.b*b.yawRate,Math.max(b.vLong,1))*180/Math.PI).toFixed(2)}°`;
+  }finally{g.world.queryGround=query;g.world.collideCircle=collide;}
+};
+spinButton.onclick=async()=>{
+  showRider=false;await inspect();document.querySelector('#gallery').replaceChildren();
+  for(let i=0;i<4;i++){
+    g.bike.wheelAngleF=g.bike.wheelAngleR=i*Math.PI/2;
+    g.model.update(g.bike,1/60,0);capturePose(`Wheel phase ${i*90}°`);
+  }
+  report.textContent='Four wheel phases: inspect circular tyres, stationary forks and centred hubs.';
+};
+const grassButton=document.createElement('button');grassButton.textContent='Check grass contact';document.querySelector('header').append(grassButton);
+const carveButton=document.createElement('button');carveButton.textContent='Check wheelie carving';document.querySelector('header').append(carveButton);
+carveButton.onclick=async()=>{
+  const query=g.world.queryGround,collide=g.world.collideCircle;showRider=true;
+  const floor=query.call(g.world,0,-60,100,{}).y;
+  document.querySelector('#gallery').replaceChildren();const lines=[];
+  try{
+    g.world.queryGround=(x,z,y,out={})=>Object.assign(out,{y:floor,nx:0,ny:1,nz:0,surface:2,platform:null});
+    g.world.collideCircle=(x,z,y,r,out={})=>Object.assign(out,{hit:false});
+    for(const direction of [-1,1]){
+      await inspect();const b=g.bike;b.vel.z=8;b.omegaR=8/b.cfg.rR;b.omegaF=8/b.cfg.rF;
+      const input={throttle:1,steer:0,brake:0,rearBrake:0,wheelie:true,boost:false,reverse:false};
+      for(let i=0;i<720&&b.pitch<.55&&!b.crashed;i++)b.step(1/240,input);
+      for(let i=0;i<144&&!b.crashed;i++){
+        b.step(1/240,{...input,throttle:b.cfg.id==='starkvarg'?.23:.6,steer:.7*direction});
+        g.model.update(b,1/240,0);
+      }
+      const lever=-b.b*Math.cos(b.pitch)+(b.h-b.cfg.rR)*Math.sin(b.pitch);
+      const slip=Math.atan2(b.vLat+lever*b.yawRate,Math.max(b.vLong,1))*180/Math.PI;
+      lines.push(`${!b.crashed&&b.rearDown&&!b.frontDown&&Math.abs(slip)<2.3?'PASS':'FAIL'} ${direction<0?'left':'right'}: bank ${(b.roll*180/Math.PI).toFixed(1)}°, rear tracking error ${slip.toFixed(2)}°`);
+      capturePose(direction<0?'Left wheelie carving':'Right wheelie carving');
+    }
+    report.textContent=lines.join('\n');
+  }finally{g.world.queryGround=query;g.world.collideCircle=collide;}
+};
+const jumpButton=document.createElement('button');jumpButton.textContent='Check jumps';document.querySelector('header').append(jumpButton);
+jumpButton.onclick=async()=>{
+  const lines=[];showRider=true;document.querySelector('#gallery').replaceChildren();
+  const ramp=g.world.surfaces.find(s=>s.cx===0&&s.cz===-190);
+  const dirX=Math.cos(ramp.yaw),dirZ=Math.sin(ramp.yaw),yaw=Math.atan2(dirX,dirZ);
+  for(const option of select.options){
+    select.value=option.value;await inspect();const b=g.bike;
+    b.reset({x:ramp.cx-dirX*(ramp.len/2+3),z:ramp.cz-dirZ*(ramp.len/2+3),y:ramp.base,yaw});
+    b.vel.x=18*dirX;b.vel.z=18*dirZ;b.omegaF=18/b.cfg.rF;b.omegaR=18/b.cfg.rR;
+    let air=0,landed=false,captured=false;
+    for(let i=0;i<1440&&!b.crashed&&!landed;i++){
+      b.step(1/240,{throttle:0,brake:0,rearBrake:0,steer:0,wheelie:false,reverse:false,boost:false});
+      air=Math.max(air,b.airTime);landed=b.events.some(e=>e.type==='land');b.events.length=0;
+      if(b.airTime>.2&&!captured){g.model.update(b,1/60,0);capturePose(option.text+' jump');captured=true;}
+    }
+    lines.push(`${!b.crashed&&landed&&air>.3?'PASS':'FAIL'} ${option.text}: ${air.toFixed(2)} s airborne, ${b.crashReason||'landed'}`);
+  }
+  report.textContent=lines.join('\n');
+};
+function capturePose(label) {
+  const b=g.bike;
+  g.camera.position.set(b.pos.x-3.4,b.pos.y+1.0,b.pos.z+3.4);
+  g.camera.lookAt(b.pos.x,b.pos.y+.35,b.pos.z);g.updateSunShadow();
+  g.renderer.render(g.scene,g.camera);
+  const card=document.createElement('div'),img=document.createElement('img');
+  img.src=g.renderer.domElement.toDataURL();img.alt=label;img.style.width='100%';
+  card.append(img,document.createTextNode(label));document.querySelector('#gallery').append(card);
+}
+poseButton.onclick=async()=>{
+  showRider=true;await inspect();document.querySelector('#gallery').replaceChildren();
+  const b=g.bike,baseY=b.pos.y,lines=[];
+  for(const direction of [-1,1]){
+    b.pitch=.65;b.yawRate=direction*.5;b.steer=direction*.08;b.roll=direction*.10;b.frontDown=false;b.rearDown=true;
+    b.pos.y=baseY+b.b*Math.sin(b.pitch)+(b.cfg.rR-b.h)*(1-Math.cos(b.pitch));
+    for(let i=0;i<120;i++)g.model.update(b,1/60,0);
+    capturePose(direction<0?'Left wheelie turn':'Right wheelie turn');
+    lines.push(`${direction<0?'Left':'Right'}: rider shift ${(g.model.rider.pelvis.position.x*100).toFixed(1)} cm; bars ${(g.model.visualSteer*180/Math.PI).toFixed(1)}°`);
+  }
+  report.textContent=lines.join('\n');
+};
+grassButton.onclick=async()=>{
+  showRider=true;await inspect();document.querySelector('#gallery').replaceChildren();
+  let spawn;
+  outer:for(let x=80;x<450;x+=7)for(let z=80;z<450;z+=7){
+    const ground=g.world.queryGround(x,z,100,{});
+    const clear=[-3,0,3,6,9,12].every(d=>{const q=g.world.queryGround(x,z+d,100,{});return q.surface===0&&!q.platform&&q.ny>.995&&!g.world.collideCircle(x,z+d,q.y,3,{}).hit;});
+    if(clear){spawn={x,z,y:ground.y,yaw:0};break outer;}
+  }
+  if(!spawn){report.textContent='FAIL: no clear grass sample';return;}
+  const b=g.bike;b.reset(spawn);
+  const idle={throttle:0,steer:0,brake:0,rearBrake:0,wheelie:false,boost:false,reverse:false};
+  for(let i=0;i<480;i++)b.step(1/240,idle);
+  g.model.update(b,1/60,0);capturePose('Grass contact at rest');
+  for(let i=0;i<480&&!b.crashed;i++)b.step(1/240,{...idle,throttle:.3});
+  g.model.update(b,1/60,0);capturePose('Riding on grass');
+  report.textContent=`${b.grounded&&!b.crashed&&b.speed>1?'PASS':'FAIL'} grass ride: ${b.kmh.toFixed(1)} km/h, grounded=${b.grounded}, crashed=${b.crashed}`;
+};
+const ready = setInterval(() => {
+  const game = frame.contentWindow.__game;
+  if (!game?.ui || !game?.model) return;
+  clearInterval(ready); g = game; g.externalDrive = true; g.paused = true;
+  for (const [id, name] of [['lbx','Light Bee X'],['ultrabee','Ultra Bee MY24'],['starkvarg','Stark VARG'],['crf450r','Honda CRF450R'],['superduke','KTM Super Duke R'],['r1','Yamaha R1'],['bobber','Blender Custom Bobber']]) {
+    select.add(new Option(name, id));
+  }
+  inspect(); status.textContent = 'Ready · static inspection';
+}, 100);
+async function inspect() {
+  g.selectBike(select.value); g.bike.reset({x:0,z:-60,y:0,yaw:0});
+  const model = g.model;
+  if (model.assetReady) { status.textContent = 'Loading Blender asset…';await model.assetReady;if (g.model !== model) return;status.textContent = `Blender asset: ${model.assetStatus}`; }
+  const b = g.bike;b.steer = showRider ? .3 : 0;g.model.update(b, 1/60, 0);
+  // Hide the rider to expose bodywork and mechanical assemblies.
+  g.model.rider.root.visible = showRider;
+  for (const limb of [...g.model.rider.arms, ...g.model.rider.legs]) {
+    for (const mesh of Object.values(limb)) mesh.visible = showRider;
+  }
+  frame.contentDocument.querySelector('#ui').style.display = 'none';
+  g.camera.position.set(b.pos.x - (quarter ? 2.8 : 3.6), b.pos.y + 0.7, b.pos.z + (quarter ? 2.8 : 0));
+  g.camera.lookAt(b.pos.x, b.pos.y + 0.04, b.pos.z);
+  g.camera.fov = 38; g.camera.updateProjectionMatrix(); g.updateSunShadow();
+  g.renderer.render(g.scene, g.camera);
+}
+select.onchange = inspect;
+allButton.onclick=async()=>{
+  const results=[],gallery=document.querySelector('#gallery');gallery.replaceChildren();
+  for(const option of select.options){
+    select.value=option.value;await inspect();
+    let meshes=0,finite=true;g.model.root.updateMatrixWorld(true);
+    g.model.root.traverseVisible(o=>{if(o.isMesh)meshes++;finite&&=o.matrixWorld.elements.every(Number.isFinite);});
+    const ok=g.bike.cfg.id===option.value&&meshes>0&&finite&&g.model.assetStatus!=='error';
+    results.push(`${ok?'PASS':'FAIL'} ${option.text}: ${g.model.assetStatus||'built-in model'}, ${meshes} meshes`);
+    g.renderer.render(g.scene,g.camera);
+    const card=document.createElement('div'),img=document.createElement('img');img.src=g.renderer.domElement.toDataURL();img.alt=option.text;img.style.width='100%';card.append(img,document.createTextNode(option.text));gallery.append(card);
+  }
+  report.textContent=results.join('\n');
+};
+wheelieButton.onclick=async()=>{
+  await inspect();const b=g.bike, query=g.world.queryGround,collide=g.world.collideCircle;
+  g.world.queryGround=(x,z,y,out={})=>Object.assign(out,{y:0,nx:0,ny:1,nz:0,surface:2,platform:null});
+  g.world.collideCircle=(x,z,y,r,out={})=>Object.assign(out,{hit:false});
+  try{
+    b.reset({x:0,y:0,z:0,yaw:0});b.vel.z=8;b.omegaR=8/b.cfg.rR;b.omegaF=8/b.cfg.rF;
+    const input={throttle:1,steer:0,brake:0,rearBrake:0,wheelie:true,boost:false,reverse:false};
+    for(let i=0;i<720&&b.pitch<.65&&!b.crashed;i++)b.step(1/240,input);
+    const angle=b.pitch*180/Math.PI;
+    for(let i=0;i<240&&!b.crashed;i++)b.step(1/240,{...input,throttle:0,wheelie:false,rearBrake:1});
+    report.textContent=`${angle>35&&!b.crashed&&b.pitch<.08?'PASS':'FAIL'} ${b.cfg.name}: lifted to ${angle.toFixed(1)}°; rear brake returned front to ${(b.pitch*180/Math.PI).toFixed(1)}°.`;
+  }finally{g.world.queryGround=query;g.world.collideCircle=collide;await inspect();}
+};
+document.querySelector('#side').onclick = () => { quarter = false; inspect(); };
+document.querySelector('#front').onclick = () => { quarter = true; inspect(); };
+document.querySelector('#rider').onclick = () => { showRider = !showRider;inspect(); };
+document.querySelector('#bridge').onclick = () => {
+  const graph = g.world.graph, car = g.traffic.cars[0];
+  car.onRing = false;car.edge = graph.edges.find(e => graph.nodes[e.b].isOverpass && e.dirZ > 0);
+  car.lane = 0;car.s = car.edge.len - 48;car.nextEdge = null;
+  g.traffic.placeOnPath(car, true);g.traffic.writeMatrices();
+  const terrain = g.world.terrainHeight(car.x,car.z);
+  report.textContent = `${car.y > terrain+4 && car.pitch < 0 ? 'PASS' : 'FAIL'}: bridge car ${ (car.y-terrain).toFixed(2) } m above terrain; uphill pitch ${(car.pitch*180/Math.PI).toFixed(2)}°`;
+  g.camera.position.set(166,27,-78);g.camera.lookAt(car.x,car.y,car.z);g.renderer.render(g.scene,g.camera);
+};
+document.querySelector('#city').onclick = () => {
+  const peds = g.traffic.peds, crossed = new Set();
+  for (let i = 0; i < 3600; i++) {
+    g.world.update(1/60);g.traffic.update(1/60, g.bike, []);
+    for (const p of peds.peds) if (p.state === 'crossing') crossed.add(p);
+  }
+  const active = peds.peds.filter(p=>p.active), crossing = active.find(p=>p.state==='crossing');
+  report.textContent = `${crossed.size ? 'PASS' : 'FAIL'}: ${crossed.size} pedestrians crossed in 60 simulated seconds; ${active.length} active. Zebra crossing geometry: ${!!g.scene.getObjectByName('pedestrian-crosswalks')}`;
+  if (crossing) {
+    const c = crossing.crossing;
+    g.camera.position.set(c.x+15,g.world.terrainHeight(c.x,c.z)+13,c.z+18);
+    g.camera.lookAt(c.x,g.world.terrainHeight(c.x,c.z),c.z);
+    g.renderer.render(g.scene,g.camera);
+  }
+};
+document.querySelector('#test').onclick = () => {
+  const query = g.world.queryGround, collide = g.world.collideCircle, sample = g.input.sample;
+  const battery = g.bike.battery, policeEnabled = g.police.enabled, oldShake=g.cameraRig.shake;
+  const results = [];
+  try {
+    g.police.enabled = false;
+    g.world.collideCircle = (x,z,y,r,out={}) => Object.assign(out,{hit:false});
+    g.input.sample = () => ({throttle:1,steer:0,brake:0,rearBrake:0,wheelie:false,boost:false,reverse:false});
+    for(const surface of [2,1]){
+    g.world.queryGround = (x,z,y,out={}) => Object.assign(out,{y:0,nx:0,ny:1,nz:0,surface,platform:null});
+    const runs=[];
+    for (const fps of [15,20,30,60,120]) {
+      g.bike.reset({x:900,z:900,y:0,yaw:0}); g.bike.battery = 1; g.accum = 0;g.cameraRig.shake=0;
+      for(let i=0;i<fps*2;i++) g.simulate(1/fps);
+      runs.push({fps, metres:g.bike.pos.z-900, kmh:g.bike.kmh, shake:g.cameraRig.shake});
+    }
+    const spread = Math.max(...runs.map(r=>r.metres))-Math.min(...runs.map(r=>r.metres));
+    const shake=Math.max(...runs.map(r=>r.shake));
+    results.push(`${spread<.05&&shake===0?'PASS':'FAIL'} ${surface===1?'dirt':'asphalt'}: ${spread.toFixed(4)} m spread at 15/20/30/60/120 FPS; camera shake ${shake.toFixed(3)}; ${runs[0].kmh.toFixed(1)} km/h`);
+    }
+    report.textContent=results.join('\n');
+  } catch (err) { report.textContent = 'FAIL: ' + err.stack; }
+  finally {
+    g.world.queryGround = query; g.world.collideCircle = collide; g.input.sample = sample;
+    g.bike.battery = battery; g.police.enabled = policeEnabled;g.cameraRig.shake=oldShake; inspect();
+  }
+};
+</script>

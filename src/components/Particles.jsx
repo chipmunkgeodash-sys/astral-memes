@@ -11,7 +11,12 @@ export default function Particles({ density = 1 }) {
     const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return undefined;
 
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // The starfield only runs when it's the chosen background, and holds still
+    // when motion is reduced (by the system or in Settings).
+    const root = document.documentElement;
+    const systemReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isReduced = () => systemReduced || root.getAttribute('data-motion') === 'reduced';
+    const isWanted = () => (root.getAttribute('data-bg') || 'stars') === 'stars';
 
     let raf = 0;
     let w = 0;
@@ -78,13 +83,19 @@ export default function Particles({ density = 1 }) {
       raf = requestAnimationFrame(frame);
     };
 
-    const start = () => { if (!raf && !reduced) raf = requestAnimationFrame(frame); };
+    const start = () => { if (!raf && !isReduced() && isWanted()) raf = requestAnimationFrame(frame); };
     const stop = () => { cancelAnimationFrame(raf); raf = 0; };
     const onVisibility = () => (document.hidden ? stop() : start());
 
     readTint();
     resize();
-    if (reduced) frame(); else start();
+    const settle = () => {
+      stop();
+      if (!isWanted()) { ctx.clearRect(0, 0, w, h); return; }
+      if (isReduced()) { frame(); stop(); } else start();
+    };
+    settle();
+    window.addEventListener('astral-display', settle);
 
     window.addEventListener('resize', resize);
     document.addEventListener('visibilitychange', onVisibility);
@@ -96,6 +107,7 @@ export default function Particles({ density = 1 }) {
     return () => {
       stop();
       window.removeEventListener('resize', resize);
+      window.removeEventListener('astral-display', settle);
       document.removeEventListener('visibilitychange', onVisibility);
       observer.disconnect();
     };

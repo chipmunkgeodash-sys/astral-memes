@@ -5,3 +5,14 @@ dist-admin/
 dist-portal/
 firebase-debug.log
 *-debug.log
+public/hush-moto-game/
+public/hushmoto.html
+hush moto/hosting-dist/
+hush moto/tools/asset-work/
+
+.env
+.env.*
+!.env.example
+hush moto/.claude/
+hush moto/artifacts/
+hush moto/assets/bikes/eride/

@@ -10,6 +10,35 @@ import { useSession } from '../lib/session';
 import { useTheme } from '../lib/theme';
 import { PageHead, SectionHead, Field, ErrorNote, Toast, Tabs } from '../components/ui';
 import Avatar from '../components/Avatar';
+import { ACCENTS, readAccent, saveAccent } from '../lib/accent';
+import { play, setSoundOn, soundOn } from '../lib/sound';
+import { readDisplay, saveDisplay } from '../lib/display';
+import { setMuted, useAccounts } from '../lib/social';
+import { BlockedCard, DataCard, EffectsCard, LookCard, MutedWordsCard, NotificationsCard } from '../components/SettingsExtras';
+
+// Everyone you've muted, with a way back.
+function MutedCard() {
+  const { accountId, profile } = useSession();
+  const accounts = useAccounts();
+  const muted = (profile?.muted || []).map((id) => (accounts || []).find((a) => a.id === id) || { id, displayName: 'Unknown member' });
+  return (
+    <div className="card">
+      <SectionHead title="Muted members" />
+      {!muted.length ? (
+        <p className="muted">Nobody muted. Mute someone from a post's menu or their profile to hide their posts and shorts.</p>
+      ) : (
+        <div className="stack" style={{ gap: 8 }}>
+          {muted.map((a) => (
+            <div key={a.id} className="spread">
+              <span className="row"><Avatar profile={a} size={28} /> {a.displayName || 'Astral member'}</span>
+              <button className="btn btn-sm" onClick={() => setMuted(accountId, a.id, false)}>Unmute</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const { accountId, profile, signOut } = useSession();
@@ -21,6 +50,15 @@ export default function SettingsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
+  const [accent, setAccent] = useState(readAccent);
+  const [sound, setSound] = useState(soundOn);
+  const [display, setDisplay] = useState(readDisplay);
+  const updateDisplay = (patch) => { const next = { ...readDisplay(), ...patch }; setDisplay(next); saveDisplay(next); };
+  useEffect(() => {
+    const sync = () => setDisplay(readDisplay());
+    window.addEventListener('astral-display', sync);
+    return () => window.removeEventListener('astral-display', sync);
+  }, []);
 
   useEffect(() => {
     if (!profile) return;
@@ -98,9 +136,110 @@ export default function SettingsPage() {
           {theme === 'light' ? <Sun size={14} /> : theme === 'dark' ? <Moon size={14} /> : <Monitor size={14} />}
           <span>Saved on this device only.</span>
         </div>
+
+        <div className="field" style={{ marginTop: 18 }}>
+          <span>Accent colour</span>
+          <div className="swatches">
+            {ACCENTS.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                className={(accent || '') === (a.color || '') ? 'swatch on' : 'swatch'}
+                style={{ background: a.color || 'linear-gradient(135deg, #5b5bd6, #8b8bf0)' }}
+                onClick={() => { setAccent(a.color || ''); saveAccent(a.color || ''); }}
+                aria-label={a.label}
+                title={a.label}
+                aria-pressed={(accent || '') === (a.color || '')}
+              />
+            ))}
+            <label className="swatch swatch-custom" title="Custom colour">
+              <input
+                type="color"
+                value={accent || '#5b5bd6'}
+                onChange={(e) => { setAccent(e.target.value); saveAccent(e.target.value); }}
+                aria-label="Custom accent colour"
+              />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <SectionHead title="Display" />
+        <div className="stack" style={{ gap: 14 }}>
+          <div className="toggle-row">
+            <span><strong>Density</strong><span className="muted"> — compact fits more on screen.</span></span>
+            <Tabs value={display.density} onChange={(v) => updateDisplay({ density: v })} options={[{ value: 'comfy', label: 'Comfy' }, { value: 'compact', label: 'Compact' }]} />
+          </div>
+          <div className="toggle-row">
+            <span><strong>Text size</strong></span>
+            <Tabs value={display.text} onChange={(v) => updateDisplay({ text: v })} options={[{ value: 'sm', label: 'Small' }, { value: 'md', label: 'Normal' }, { value: 'lg', label: 'Large' }]} />
+          </div>
+          <div className="toggle-row">
+            <span><strong>Reduce motion</strong><span className="muted"> — turns off animations and effects.</span></span>
+            <button
+              type="button"
+              className={display.motion === 'reduced' ? 'switch on' : 'switch'}
+              role="switch"
+              aria-checked={display.motion === 'reduced'}
+              onClick={() => updateDisplay({ motion: display.motion === 'reduced' ? 'full' : 'reduced' })}
+            >
+              <span />
+            </button>
+          </div>
+          <div className="field">
+            <span>Background</span>
+            <div className="bg-options">
+              {[
+                { value: 'stars', label: 'Starfield' },
+                { value: 'aurora', label: 'Aurora' },
+                { value: 'grid', label: 'Grid' },
+                { value: 'plain', label: 'Plain' }
+              ].map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  className={display.bg === o.value ? `bg-option bg-preview-${o.value} on` : `bg-option bg-preview-${o.value}`}
+                  onClick={() => updateDisplay({ bg: o.value })}
+                  aria-pressed={display.bg === o.value}
+                >
+                  <span className="bg-swatch" />
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <LookCard display={display} updateDisplay={updateDisplay} />
+      <EffectsCard />
+      <NotificationsCard />
+      <MutedCard />
+      <BlockedCard />
+      <MutedWordsCard />
+
+      <div className="card">
+        <SectionHead title="Sound" />
+        <div className="toggle-row">
+          <span>
+            <strong>Sound effects</strong>
+            <span className="muted"> — rolls, wins, likes and reveals.</span>
+          </span>
+          <button
+            type="button"
+            className={sound ? 'switch on' : 'switch'}
+            role="switch"
+            aria-checked={sound}
+            onClick={() => { const next = !sound; setSound(next); setSoundOn(next); if (next) play('good'); }}
+          >
+            <span />
+          </button>
+        </div>
       </div>
 
       <PasswordCard onDone={() => flash('Password changed')} />
+      <DataCard />
 
       <div className="card">
         <SectionHead title="Session" />

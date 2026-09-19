@@ -1,62 +1,34 @@
 import { useState } from 'react';
-import { Bomb, Spade, Layers, Coins, RotateCcw } from 'lucide-react';
 import {
-  freshDeck, handValue, isBlackjack, rankHand, compareScores,
-  rankLabel, isRed, randomInt
+  Bomb, Spade, Layers, Coins, Cherry, Disc3, Rocket, Dices, Triangle, ArrowUpDown, Crown, Grid3x3, TrendingUp, Ticket, Star
+} from 'lucide-react';
+import {
+  freshDeck, handValue, isBlackjack, rankHand, compareScores, randomInt
 } from '../lib/cards';
-import { Tabs } from './ui';
-
-/* --------------------------------------------------------------- shared */
-
-function Bet({ points, bet, setBet, disabled }) {
-  const clamp = (v) => Math.max(1, Math.min(points, Math.floor(v) || 1));
-  return (
-    <div className="bet">
-      <span className="label">Bet</span>
-      <div className="bet-row">
-        <button className="btn btn-sm" onClick={() => setBet(clamp(bet - 10))} disabled={disabled || bet <= 1}>−10</button>
-        <input
-          className="input bet-input"
-          type="number"
-          min={1}
-          max={points}
-          value={bet}
-          onChange={(e) => setBet(clamp(Number(e.target.value)))}
-          disabled={disabled}
-        />
-        <button className="btn btn-sm" onClick={() => setBet(clamp(bet + 10))} disabled={disabled || bet >= points}>+10</button>
-        <button className="btn btn-sm" onClick={() => setBet(clamp(Math.floor(points / 2)))} disabled={disabled}>½</button>
-        <button className="btn btn-sm" onClick={() => setBet(points)} disabled={disabled}>Max</button>
-      </div>
-    </div>
-  );
-}
-
-function Card({ card, hidden }) {
-  if (hidden) return <span className="pcard pcard-back" aria-label="Face-down card" />;
-  return (
-    <span className={isRed(card) ? 'pcard pcard-red' : 'pcard'}>
-      <b>{rankLabel(card.rank)}</b>
-      <i>{card.suit}</i>
-    </span>
-  );
-}
-
-function Result({ tone, children }) {
-  if (!children) return null;
-  return <p className={`result result-${tone}`}>{children}</p>;
-}
+import { Bet, Card, Result, useRound, useSavedBet, GameContext, fmt } from './CasinoKit';
+import { KEYS, pushRecent, useLocal } from '../lib/local';
+import { Slots, Roulette, Crash, Dice, Plinko, HiLo, CoinFlip, Baccarat, Keno, Limbo, Scratch } from './CasinoGames';
 
 /* ------------------------------------------------------------ blackjack */
-// Dealer draws to 17. Win pays 2x, push returns the stake.
+// Dealer draws to 17. Win pays 2x, blackjack 2.5x, push returns the stake.
 
 function Blackjack({ points, settle, busy }) {
-  const [bet, setBet] = useState(10);
+  const [bet, setBet] = useSavedBet();
   const [game, setGame] = useState(null);
   const [msg, setMsg] = useState({ text: 'Deal a hand, then hit or stand.', tone: 'idle' });
+  const round = useRound(settle);
 
-  const deal = () => {
+  const finish = (payout, text, tone) => {
+    setMsg({ text, tone });
+    round.owe(bet, payout, `Blackjack · ${text}`);
+    round.pay();
+  };
+
+  const deal = async () => {
     if (bet < 1 || bet > points) return;
+    if (!(await round.stake(bet))) return;
+    round.owe(bet, 0, 'Blackjack · left mid-hand');
+
     const deck = freshDeck();
     const player = [deck.pop(), deck.pop()];
     const dealer = [deck.pop(), deck.pop()];
@@ -72,11 +44,6 @@ function Blackjack({ points, settle, busy }) {
     }
     setGame({ deck, player, dealer, done: false });
     setMsg({ text: 'Hit or stand.', tone: 'idle' });
-  };
-
-  const finish = (payout, text, tone) => {
-    setMsg({ text, tone });
-    settle(payout - bet, `Blackjack · ${text}`);
   };
 
   const hit = () => {
@@ -150,48 +117,55 @@ function Blackjack({ points, settle, busy }) {
 // Nine tiles, two mines. Each safe tile adds 35% to the stake.
 
 function Mines({ points, settle, busy }) {
-  const [bet, setBet] = useState(10);
+  const [bet, setBet] = useSavedBet();
   const [game, setGame] = useState(null);
   const [msg, setMsg] = useState({ text: 'Find safe tiles and cash out before hitting a mine.', tone: 'idle' });
+  const round = useRound(settle);
 
-  const start = () => {
+  const payoutFor = (stake, n) => Math.floor(stake * (1 + n * 0.35));
+
+  const start = async () => {
     if (bet < 1 || bet > points) return;
+    if (!(await round.stake(bet))) return;
+    round.owe(bet, bet, 'Mines · left before picking');
     const mines = new Set();
     while (mines.size < 2) mines.add(randomInt(9));
     setGame({ bet, mines: [...mines], revealed: [], dead: false });
     setMsg({ text: 'Two mines are hidden. Choose carefully.', tone: 'idle' });
   };
 
-  const payoutFor = (n) => Math.floor(bet * (1 + n * 0.35));
-
   const pick = (i) => {
     if (!game || game.dead || game.revealed.includes(i)) return;
     if (game.mines.includes(i)) {
       setGame({ ...game, dead: true });
       setMsg({ text: 'Mine hit. Bet lost.', tone: 'lose' });
-      settle(-bet, 'Mines · hit a mine');
+      round.owe(game.bet, 0, 'Mines · hit a mine');
+      round.pay();
       return;
     }
     const revealed = [...game.revealed, i];
+    const payout = payoutFor(game.bet, revealed.length);
     if (revealed.length === 7) {
       setGame({ ...game, revealed, dead: true });
-      const payout = payoutFor(revealed.length);
-      setMsg({ text: `Cleared the board! Payout: ${payout} coins.`, tone: 'win' });
-      settle(payout - bet, 'Mines · cleared the board');
+      setMsg({ text: `Cleared the board! Payout: ${fmt(payout)} coins.`, tone: 'win' });
+      round.owe(game.bet, payout, 'Mines · cleared the board');
+      round.pay();
       return;
     }
+    // Walking away now counts as cashing out.
+    round.owe(game.bet, payout, `Mines · cashed out on ${revealed.length} tile${revealed.length === 1 ? '' : 's'}`);
     setGame({ ...game, revealed });
   };
 
   const cashOut = () => {
-    const payout = payoutFor(game.revealed.length);
+    const payout = payoutFor(game.bet, game.revealed.length);
     setGame({ ...game, dead: true });
-    setMsg({ text: `Cashed out safely. Payout: ${payout} coins.`, tone: 'win' });
-    settle(payout - bet, `Mines · cashed out on ${game.revealed.length} tiles`);
+    setMsg({ text: `Cashed out safely. Payout: ${fmt(payout)} coins.`, tone: 'win' });
+    round.pay();
   };
 
   const live = game && !game.dead;
-  const next = game ? payoutFor(game.revealed.length + 1) : 0;
+  const next = game ? payoutFor(game.bet, game.revealed.length + 1) : 0;
 
   return (
     <div className="arcade">
@@ -220,9 +194,9 @@ function Mines({ points, settle, busy }) {
         {live ? (
           <>
             <button className="btn btn-primary" onClick={cashOut} disabled={busy || !game.revealed.length}>
-              Cash out {game.revealed.length ? `· ${payoutFor(game.revealed.length)}` : ''}
+              Cash out {game.revealed.length ? `· ${fmt(payoutFor(game.bet, game.revealed.length))}` : ''}
             </button>
-            <span className="faint">Next safe tile: {next}</span>
+            <span className="faint">Next safe tile: {fmt(next)}</span>
           </>
         ) : (
           <button className="btn btn-primary" onClick={start} disabled={busy || points < 1 || bet > points}>
@@ -238,12 +212,14 @@ function Mines({ points, settle, busy }) {
 // Five cards each, best hand wins. A tie returns the stake.
 
 function PokerDraw({ points, settle, busy }) {
-  const [bet, setBet] = useState(10);
+  const [bet, setBet] = useSavedBet();
   const [game, setGame] = useState(null);
   const [msg, setMsg] = useState({ text: 'Best five-card hand wins. A tie returns your bet.', tone: 'idle' });
+  const round = useRound(settle);
 
-  const deal = () => {
+  const deal = async () => {
     if (bet < 1 || bet > points) return;
+    if (!(await round.stake(bet))) return;
     const deck = freshDeck();
     const player = Array.from({ length: 5 }, () => deck.pop());
     const dealer = Array.from({ length: 5 }, () => deck.pop());
@@ -254,13 +230,15 @@ function PokerDraw({ points, settle, busy }) {
     setGame({ player, dealer, mine, theirs });
     if (diff > 0) {
       setMsg({ text: `${mine.name} beats ${theirs.name}.`, tone: 'win' });
-      settle(bet, `Poker · ${mine.name} beat ${theirs.name}`);
+      round.owe(bet, bet * 2, `Poker · ${mine.name} beat ${theirs.name}`);
     } else if (diff < 0) {
       setMsg({ text: `${theirs.name} beats your ${mine.name}.`, tone: 'lose' });
-      settle(-bet, `Poker · lost to ${theirs.name}`);
+      round.owe(bet, 0, `Poker · lost to ${theirs.name}`);
     } else {
       setMsg({ text: `Tie — both ${mine.name}. Bet returned.`, tone: 'idle' });
+      round.owe(bet, bet, `Poker · tie on ${mine.name}`);
     }
+    round.pay();
   };
 
   return (
@@ -292,37 +270,85 @@ function PokerDraw({ points, settle, busy }) {
   );
 }
 
-/* --------------------------------------------------------------- shell */
+/* --------------------------------------------------------------- floor */
 
 const GAMES = {
-  blackjack: { label: 'Blackjack', Component: Blackjack },
-  mines: { label: 'Mines', Component: Mines },
-  poker: { label: 'Poker Draw', Component: PokerDraw }
+  slots: { label: 'Slots', blurb: 'Three reels, 400× jackpot', icon: Cherry, Component: Slots },
+  roulette: { label: 'Roulette', blurb: 'Red, black or a number', icon: Disc3, Component: Roulette },
+  blackjack: { label: 'Blackjack', blurb: 'Beat the dealer to 21', icon: Spade, Component: Blackjack },
+  crash: { label: 'Crash', blurb: 'Cash out before it blows', icon: Rocket, Component: Crash },
+  plinko: { label: 'Plinko', blurb: 'Drop it, up to 29×', icon: Triangle, Component: Plinko },
+  dice: { label: 'Dice', blurb: 'Pick your odds', icon: Dices, Component: Dice },
+  keno: { label: 'Keno', blurb: 'Pick numbers, up to 1,683×', icon: Grid3x3, Component: Keno },
+  limbo: { label: 'Limbo', blurb: 'Name your multiplier', icon: TrendingUp, Component: Limbo },
+  scratch: { label: 'Scratch Card', blurb: 'Three of a kind, up to 50×', icon: Ticket, Component: Scratch },
+  baccarat: { label: 'Baccarat', blurb: 'Player, Banker or Tie', icon: Crown, Component: Baccarat },
+  hilo: { label: 'Hi-Lo', blurb: 'Higher or lower, keep going', icon: ArrowUpDown, Component: HiLo },
+  mines: { label: 'Mines', blurb: 'Dodge two mines', icon: Bomb, Component: Mines },
+  poker: { label: 'Poker Draw', blurb: 'Best five cards wins', icon: Layers, Component: PokerDraw },
+  coinflip: { label: 'Coin Flip', blurb: 'Double or nothing', icon: Coins, Component: CoinFlip }
 };
 
 export default function Arcade({ points, only = 'all', settle, busy }) {
-  const [tab, setTab] = useState(only === 'all' ? 'blackjack' : only);
-  const active = only === 'all' ? tab : only;
-  const { Component } = GAMES[active] || GAMES.blackjack;
+  const [favorites, setFavorites] = useLocal(KEYS.casinoFavorites, []);
+  const [recent, setRecent] = useLocal(KEYS.casinoRecent, []);
+  const [tab, setTab] = useState(only === 'all' ? ((recent || []).find((id) => GAMES[id]) || 'slots') : only);
+  const active = GAMES[only === 'all' ? tab : only] ? (only === 'all' ? tab : only) : 'slots';
+  const { Component, label } = GAMES[active];
+
+  const open = (id) => { setTab(id); setRecent((r) => pushRecent(r, id, 6)); };
+  const toggleFavorite = (id) => setFavorites((f) => ((f || []).includes(id) ? f.filter((x) => x !== id) : [...(f || []), id]));
+  const order = Object.keys(GAMES).sort((a, b) => Number((favorites || []).includes(b)) - Number((favorites || []).includes(a)));
 
   return (
-    <div className="card">
-      <div className="spread" style={{ marginBottom: 14 }}>
-        {only === 'all' ? (
-          <Tabs
-            value={tab}
-            onChange={setTab}
-            options={Object.entries(GAMES).map(([value, g]) => ({ value, label: g.label }))}
-          />
-        ) : <h2>{GAMES[active]?.label}</h2>}
-        <span className="chip chip-accent"><Coins size={13} /> {points.toLocaleString()} points</span>
-      </div>
-
-      {points < 1 ? (
-        <p className="muted row"><RotateCcw size={15} /> You're out of points. Take a refill to keep playing.</p>
-      ) : (
-        <Component points={points} settle={settle} busy={busy} />
+    <div className="stack">
+      {only === 'all' && !!(recent || []).filter((id) => GAMES[id]).length && (
+        <div className="row wrap recent-games">
+          <span className="label">Recently played</span>
+          {(recent || []).filter((id) => GAMES[id]).map((id) => (
+            <button key={id} type="button" className={active === id ? 'chip chip-accent' : 'chip'} onClick={() => open(id)}>{GAMES[id].label}</button>
+          ))}
+        </div>
       )}
+      {only === 'all' && (
+        <div className="lobby" role="tablist" aria-label="Casino games">
+          {order.map((id) => {
+            const g = GAMES[id];
+            const Icon = g.icon;
+            const fav = (favorites || []).includes(id);
+            return (
+              <div key={id} className="lobby-cell">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={active === id}
+                  className={active === id ? 'lobby-game lobby-on' : 'lobby-game'}
+                  onClick={() => open(id)}
+                >
+                  <Icon size={20} />
+                  <strong>{g.label}</strong>
+                  <small>{g.blurb}</small>
+                </button>
+                <button type="button" className={fav ? 'lobby-star on' : 'lobby-star'} onClick={() => toggleFavorite(id)} aria-label={fav ? `Unfavourite ${g.label}` : `Favourite ${g.label}`} aria-pressed={fav}>
+                  <Star size={13} fill={fav ? 'currentColor' : 'none'} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="card">
+        <div className="spread" style={{ marginBottom: 14 }}>
+          <h2>{label}</h2>
+          <span className="chip chip-accent"><Coins size={13} /> {points.toLocaleString()}</span>
+
+        </div>
+        {/* Keyed by game so switching tables settles whatever round was open. */}
+        <GameContext.Provider value={active}>
+          <Component key={active} points={points} settle={settle} busy={busy} />
+        </GameContext.Provider>
+      </div>
     </div>
   );
 }

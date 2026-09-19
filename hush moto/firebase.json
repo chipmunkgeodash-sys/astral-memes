@@ -1,0 +1,77 @@
+{
+  "hosting": [
+    {
+      "site": "hush-moto",
+      "public": "hosting-dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "headers": [
+        {
+          "source": "**/*.glb",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "model/gltf-binary"
+            }
+          ]
+        },
+        {
+          "source": "**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "site": "hush-moto-20260919",
+      "public": "hosting-dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "headers": [
+        {
+          "source": "**/*.glb",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "model/gltf-binary"
+            }
+          ]
+        },
+        {
+          "source": "**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "key": "X-Content-Type-Options",
+              "value": "nosniff"
+            }
+          ]
+        }
+      ],
+      "redirects": [
+        {
+          "source": "/",
+          "destination": "https://hush-moto.web.app/",
+          "type": 302
+        }
+      ]
+    }
+  ]
+}

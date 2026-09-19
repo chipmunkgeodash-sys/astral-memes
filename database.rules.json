@@ -1,0 +1,201 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "hushMoto": {
+      "rooms": {
+        "$code": {
+          ".read": "auth != null",
+          ".write": "auth != null && ((!data.exists() && (!newData.exists() || newData.child('meta/host').val() === auth.uid)) || (data.child('meta/host').val() === auth.uid && !newData.exists()))",
+          ".validate": "$code.matches(/^[A-F0-9]{6}$/) && newData.hasChildren(['meta', 'players'])",
+          "meta": {
+            ".write": "auth != null && root.child('hushMoto/rooms').child($code).child('meta/host').val() === auth.uid",
+            ".validate": "newData.hasChildren(['host','name','public','createdAt'])",
+            "host": {
+              ".validate": "newData.isString() && newData.val() === auth.uid && (!data.exists() || newData.val() === data.val())"
+            },
+            "name": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 32"
+            },
+            "public": {
+              ".validate": "newData.isBoolean()"
+            },
+            "createdAt": {
+              ".validate": "newData.isNumber() && newData.val() <= now + 1000"
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "players": {
+            "$slot": {
+              ".write": "auth != null && root.child('hushMoto/rooms').child($code).child('meta').exists() && ((!data.exists() && (!newData.exists() || newData.child('id').val() === auth.uid)) || data.child('id').val() === auth.uid)",
+              ".validate": "$slot.matches(/^[0-7]$/) && newData.hasChildren(['id','name'])",
+              "id": {
+                ".validate": "newData.isString() && newData.val() === auth.uid && (!data.exists() || newData.val() === data.val())"
+              },
+              "name": {
+                ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 24"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "poses": {
+            "$slot": {
+              ".write": "auth != null && (root.child('hushMoto/rooms').child($code).child('players').child($slot).child('id').val() === auth.uid || (!data.exists() && !newData.exists()))",
+              ".validate": "$slot.matches(/^[0-7]$/) && newData.hasChildren([\"bikeId\",\"x\",\"y\",\"z\",\"yaw\",\"pitch\",\"roll\",\"steer\",\"suspF\",\"suspR\",\"wheelAngleF\",\"wheelAngleR\",\"speed\",\"groundPitch\",\"yawRate\",\"throttle\",\"grounded\",\"frontDown\",\"rearDown\",\"brakeLight\",\"paused\"])",
+              "build": {
+                ".validate": "newData.hasChildren(['paint','battery','controller'])",
+                "paint": {
+                  ".validate": "newData.isString() && newData.val().matches(/^(stock|mint|ice|ember|violet|white)$/)"
+                },
+                "battery": {
+                  ".validate": "newData.isString() && newData.val().matches(/^(stock|chi)$/)"
+                },
+                "controller": {
+                  ".validate": "newData.isString() && newData.val().matches(/^(stock|ebmx)$/)"
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "gear": {
+                ".validate": "newData.hasChildren(['helmetM','gearA','gearB','gloveM','bootM','visorM','number','backpack'])",
+                "helmetM": {
+                  ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{6}$/)"
+                },
+                "gearA": {
+                  ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{6}$/)"
+                },
+                "gearB": {
+                  ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{6}$/)"
+                },
+                "gloveM": {
+                  ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{6}$/)"
+                },
+                "bootM": {
+                  ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{6}$/)"
+                },
+                "visorM": {
+                  ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{6}$/)"
+                },
+                "number": {
+                  ".validate": "newData.isString() && newData.val().matches(/^[0-9]{1,2}$/)"
+                },
+                "backpack": {
+                  ".validate": "newData.isBoolean()"
+                },
+                "$other": {
+                  ".validate": false
+                }
+              },
+              "trickIndex": {
+                ".validate": "newData.isNumber() && newData.val() % 1 === 0 && newData.val() >= -1 && newData.val() <= 4"
+              },
+              "trickBlend": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1"
+              },
+              "bikeId": {
+                ".validate": "newData.isString() && (newData.val() === 'lbx' || newData.val() === 'ultrabee' || newData.val() === 'starkvarg' || newData.val() === 'crf450r' || newData.val() === 'superduke' || newData.val() === 'r1' || newData.val() === 'bobber')"
+              },
+              "x": {
+                ".validate": "newData.isNumber() && newData.val() >= -2000 && newData.val() <= 2000"
+              },
+              "y": {
+                ".validate": "newData.isNumber() && newData.val() >= -1000 && newData.val() <= 1000"
+              },
+              "z": {
+                ".validate": "newData.isNumber() && newData.val() >= -2000 && newData.val() <= 2000"
+              },
+              "yaw": {
+                ".validate": "newData.isNumber() && newData.val() >= -100000000 && newData.val() <= 100000000"
+              },
+              "pitch": {
+                ".validate": "newData.isNumber() && newData.val() >= -7 && newData.val() <= 7"
+              },
+              "roll": {
+                ".validate": "newData.isNumber() && newData.val() >= -7 && newData.val() <= 7"
+              },
+              "steer": {
+                ".validate": "newData.isNumber() && newData.val() >= -2 && newData.val() <= 2"
+              },
+              "suspF": {
+                ".validate": "newData.isNumber() && newData.val() >= -2 && newData.val() <= 2"
+              },
+              "suspR": {
+                ".validate": "newData.isNumber() && newData.val() >= -2 && newData.val() <= 2"
+              },
+              "wheelAngleF": {
+                ".validate": "newData.isNumber() && newData.val() >= -1000000000 && newData.val() <= 1000000000"
+              },
+              "wheelAngleR": {
+                ".validate": "newData.isNumber() && newData.val() >= -1000000000 && newData.val() <= 1000000000"
+              },
+              "speed": {
+                ".validate": "newData.isNumber() && newData.val() >= -200 && newData.val() <= 200"
+              },
+              "groundPitch": {
+                ".validate": "newData.isNumber() && newData.val() >= -7 && newData.val() <= 7"
+              },
+              "yawRate": {
+                ".validate": "newData.isNumber() && newData.val() >= -20 && newData.val() <= 20"
+              },
+              "throttle": {
+                ".validate": "newData.isNumber() && newData.val() >= -1 && newData.val() <= 1"
+              },
+              "grounded": {
+                ".validate": "newData.isBoolean()"
+              },
+              "frontDown": {
+                ".validate": "newData.isBoolean()"
+              },
+              "rearDown": {
+                ".validate": "newData.isBoolean()"
+              },
+              "brakeLight": {
+                ".validate": "newData.isBoolean()"
+              },
+              "paused": {
+                ".validate": "newData.isBoolean()"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
+      "servers": {
+        ".read": "auth != null && query.orderByChild === 'updatedAt' && query.limitToLast != null && query.limitToLast <= 100",
+        ".indexOn": [
+          "updatedAt"
+        ],
+        "$code": {
+          ".read": "auth != null",
+          ".write": "auth != null && ((!data.exists() && (!newData.exists() || (root.child('hushMoto/rooms').child($code).child('meta/host').val() === auth.uid && newData.child('host').val() === auth.uid))) || data.child('host').val() === auth.uid)",
+          ".validate": "$code.matches(/^[A-F0-9]{6}$/) && newData.hasChildren(['host','name','players','updatedAt']) && root.child('hushMoto/rooms').child($code).child('meta/public').val() === true",
+          "host": {
+            ".validate": "newData.isString() && newData.val() === auth.uid && root.child('hushMoto/rooms').child($code).child('meta/host').val() === auth.uid"
+          },
+          "name": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 32"
+          },
+          "players": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 8"
+          },
+          "updatedAt": {
+            ".validate": "newData.isNumber() && newData.val() <= now + 1000 && newData.val() >= now - 10000"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    }
+  }
+}

@@ -30,8 +30,10 @@ echo Signed in.
 echo.
 echo == Creating hosting sites
 rem "already exists" is the expected outcome on every run after the first.
-call "%FB%" hosting:sites:create astral-games1
-call "%FB%" hosting:sites:create astral-gateway
+call "%FB%" hosting:sites:create astral-launchpad
+call "%FB%" hosting:sites:create c7mh9f9g2u
+call "%FB%" hosting:sites:create mq5bi2szqu
+call "%FB%" hosting:sites:create cw2exkq6jo
 
 echo.
 echo == Building
@@ -51,5 +53,7 @@ if errorlevel 1 (
 
 echo.
 echo Live:
-echo    https://astral-gateway.web.app   ^(the portal^)
-echo    https://astral-games1.web.app    ^(the app^)
+echo    https://astral-launchpad.web.app   ^(the launchpad^)
+echo    https://c7mh9f9g2u.web.app       ^(the app^)
+echo    https://mq5bi2szqu.web.app       ^(the app^)
+echo    https://cw2exkq6jo.web.app       ^(the app^)
