@@ -470,12 +470,20 @@ export class Bike {
     // In the air the bars only move for show, and only at low speed — landing
     // on a fistful of lock at 200 km/h would spit the rider off instantly.
     const airVis = input.steer * 0.10 * (1 - smoothstep(clamp(speed / 26, 0, 1)));
+    // A real rider uses much less bar angle as speed rises. Keeping full lock
+    // available at motorway speed makes the old arcade turn snap instantly;
+    // the progressive limit below preserves parking-lot manoeuvrability while
+    // giving fast corners a stable, believable steering response.
+    const highSpeedLock = lerp(cfg.maxSteer, cfg.maxSteer * 0.22,
+      smoothstep(clamp((speed - 3) / 27, 0, 1)));
+    const trail = (cfg.rake || .45) * 0.09;
+    const counterSteer = input.steer * trail * (1 - smoothstep(clamp(speed / 8, 0, 1)));
     const steerTarget = !frontDown
-      ? clamp(kinSteer + airVis, -cfg.maxSteer, cfg.maxSteer)
-      : clamp(kinSteer + corr, -cfg.maxSteer, cfg.maxSteer);
+      ? clamp(kinSteer + airVis, -highSpeedLock, highSpeedLock)
+      : clamp(kinSteer + corr + counterSteer, -highSpeedLock, highSpeedLock);
     this.targetYawRate = targetYaw;
     this.steerLimit = Math.abs(kinSteer);
-    this.steer = damp(this.steer, steerTarget, frontDown ? 11.0 : 5.0, dt);
+    this.steer = damp(this.steer, steerTarget, frontDown ? 13.0 - smoothstep(clamp(speed / 24, 0, 1)) * 4 : 5.0, dt);
 
     // ---- powertrain ------------------------------------------------------
     let driveTorque = 0;

@@ -17,6 +17,7 @@ import { loadBuild } from './customization.js';
 import { RideLab } from './ride-lab.js';
 import { Multiplayer } from './multiplayer.js';
 import { nearestRoad } from './roadnet.js';
+import { GameModes } from './game-modes.js';
 
 const PHYS_DT = 1 / 240;
 // Cover the entire 250 ms frame cap, including 15/20 FPS rendering. With
@@ -86,6 +87,7 @@ class Game {
     this.ui = new UI(this);
     this.multiplayer = new Multiplayer(this);
     this.rideLab = new RideLab(this);
+    this.modes = new GameModes(this);
     this.ui.setBikeLabel(this.bike.cfg);
     this.ui.setCameraLabel(this.cameraRig.mode);
     this.setShadows(storage.bool('hushmoto.shadows', true));
@@ -358,6 +360,7 @@ class Game {
     this.checkpoints.updateVisual(dt, this.bike, this.ui);
 
     this.rideLab?.update(dt);
+    this.modes?.update(dt);
     this.renderer.render(this.scene, this.camera);
     if (this.paused && this.ui.activePanel === 'map') this.ui.drawCityMap();
     if (this.paused && this.ui.activePanel === 'garage') this.ui.showroom?.render(dt);

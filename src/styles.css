@@ -2559,3 +2559,27 @@ button.badge { cursor: pointer; }
 .news-group h3 { font-size: 1rem; }
 .news-list { margin: 10px 0 0; padding-left: 22px; columns: 2 220px; column-gap: 20px; font-size: .86rem; color: var(--text-muted); }
 .news-list li { break-inside: avoid; margin-bottom: 3px; }
+
+/* ---- Astral Guide ---- */
+.assistant-grid { display:grid; grid-template-columns:minmax(0,1.45fr) minmax(260px,.75fr); gap:14px; align-items:start; }
+.assistant-chat { min-height:560px; display:flex; flex-direction:column; gap:14px; }
+.assistant-head { display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border); padding-bottom:12px; }
+.assistant-head > div { display:flex; flex-direction:column; gap:2px; flex:1; }
+.assistant-head small { color:var(--text-muted); font-size:.78rem; }
+.assistant-orb { display:grid; place-items:center; width:38px; height:38px; border-radius:12px; color:var(--accent-text); background:linear-gradient(135deg,var(--accent),#a78bfa); box-shadow:var(--glow); }
+.assistant-messages { display:flex; flex-direction:column; gap:10px; flex:1; max-height:390px; overflow:auto; padding-right:3px; }
+.assistant-message { display:flex; gap:8px; align-items:flex-start; max-width:88%; }
+.assistant-message > span { color:var(--accent); margin-top:4px; }
+.assistant-message p { margin:0; padding:10px 12px; border:1px solid var(--border); border-radius:12px 12px 12px 3px; background:var(--surface-2); line-height:1.5; white-space:pre-wrap; }
+.assistant-message.user { align-self:flex-end; flex-direction:row-reverse; }
+.assistant-message.user > span { color:var(--text-muted); }
+.assistant-message.user p { border-color:var(--accent); border-radius:12px 12px 3px 12px; background:var(--accent-soft); }
+.assistant-message small { display:block; margin-top:4px; color:var(--text-faint); font-size:.68rem; }
+.assistant-suggestions { display:flex; flex-wrap:wrap; gap:6px; }
+.assistant-compose { display:flex; gap:8px; }
+.assistant-compose input { flex:1; min-width:0; }
+.assistant-features { display:flex; flex-wrap:wrap; gap:7px; }
+.assistant-features .chip { display:inline-flex; align-items:center; gap:5px; }
+.assistant-tasks { margin:14px 0 0; padding-left:20px; color:var(--text-muted); font-size:.86rem; }
+.assistant-tasks li + li { margin-top:6px; }
+@media (max-width: 760px) { .assistant-grid { grid-template-columns:1fr; } .assistant-chat { min-height:500px; } }

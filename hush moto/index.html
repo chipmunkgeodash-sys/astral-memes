@@ -185,6 +185,7 @@
   #hint.show { opacity: 1; transform: translateX(-50%); }
 
   #fps { position: absolute; right: 16px; top: 182px; font-size: 10.5px; color: var(--dim); font-weight: 700; letter-spacing: .1em; text-align: right; }
+  #mode-hud { position:absolute; left:50%; top:72px; transform:translateX(-50%); padding:7px 13px; border:1px solid #ffffff26; border-radius:18px; background:#0b1119d9; color:#dff9ed; font:700 11px system-ui; letter-spacing:.08em; white-space:nowrap; }
 
   #boost-flash {
     position: absolute; inset: 0; pointer-events: none; opacity: 0;
@@ -233,6 +234,12 @@
   .mp-server span { color:#a9b8c7; font-size:12px; }
   .mp-connection { border-top:1px solid #ffffff16; margin-top:20px; padding-top:16px; font-size:12px; color:#a9b8c7; }
   .mp-connection summary { cursor:pointer; }
+  .mode-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .mode-card { text-align:left; padding:16px; border:1px solid #ffffff18; border-radius:13px; background:#ffffff06; color:var(--text); cursor:pointer; display:flex; flex-direction:column; gap:7px; transition:.16s; }
+  .mode-card:hover { border-color:var(--accent); background:#39d98a10; transform:translateY(-2px); }
+  .mode-card span { color:var(--dim); font-size:12px; line-height:1.45; }
+  .mode-card small { color:#9bf2c6; font-size:9px; letter-spacing:.14em; }
+  @media(max-width:700px){.mode-list{grid-template-columns:1fr;}}
   .btn:disabled { opacity:.45; cursor:not-allowed; }
   #mp-badge { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:15; max-width:90vw; background:#0a1428de; border:1px solid #7296c955; color:#b8d7ff; padding:10px 16px; border-radius:30px; font:600 11px system-ui; cursor:pointer; }
   #mp-badge.connected { color:#9bf2c6; border-color:#39d98a66; }
@@ -440,6 +447,7 @@
           <button class="btn primary" id="btn-resume">Resume</button>
           <button class="btn" id="btn-restart">Restart ride</button>
           <button class="btn" id="btn-garage">Garage / Customize</button><button class="btn" id="btn-map">City map</button>
+          <button class="btn" id="btn-modes">Game modes · Tag + 9 more</button>
           <button class="btn" id="btn-controls">Controls</button>
           <button class="btn" id="btn-settings">Settings</button>
         </div>
@@ -492,6 +500,12 @@
           <canvas id="city-map" width="700" height="700" aria-label="City map. Click to place a waypoint."></canvas>
           <div class="mp-actions"><p id="map-distance" role="status">Click the map to set a waypoint.</p><button class="btn small" id="map-clear">Clear waypoint</button></div>
           <label class="mp-label">Map atmosphere<select id="map-atmosphere"><option value="day">Clear day</option><option value="sunset">Golden evening</option><option value="night">Blue night</option></select></label>
+        </div>
+      </div>
+      <div id="menu-modes" class="panel-page">
+        <div class="page-head"><h2>GAME MODES</h2><button class="btn small btn-back">Back</button></div>
+        <div class="panel page-inner"><p class="mp-note">Pick a focused ride. Tag works solo with a moving target and follows crew riders when you are multiplayer.</p>
+          <div id="mode-list" class="mode-list"></div><p id="mode-status" role="status" class="mp-status">Choose a mode to start.</p><p class="mp-note">This wave adds 10 modes on top of fuel stations, live public servers, garage builds, rider outfits, tricks, map routing, photo mode, trip records, police pursuits, day/night, traffic tuning, recovery points and smoother realistic cornering.</p>
         </div>
       </div>
       <div id="menu-garage" class="panel-page">

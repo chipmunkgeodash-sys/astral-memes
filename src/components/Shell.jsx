@@ -3,7 +3,7 @@ import {
   Home, Rss, Vote, Store, Gamepad2, MessageCircle, Hash,
   Shield, LogOut, Search, Coins, Menu, Sun, Moon, Settings, ShieldCheck, FileText, ExternalLink, Dices, Sparkles,
   Users, Trophy, Award, Megaphone, User, Flame, Clapperboard, Bell, ArrowUp, WifiOff, Keyboard,
-  PanelLeftClose, PanelLeftOpen, Maximize, Minimize, PenSquare, Bike
+  PanelLeftClose, PanelLeftOpen, Maximize, Minimize, PenSquare, Bike, Bot
 } from 'lucide-react';
 import SiteEffects from './SiteEffects';
 import { QuickPostCard } from './HomeExtras';
@@ -41,6 +41,7 @@ const NAV_GROUPS = [
     label: 'Play',
     items: [
       { to: '/studio', label: 'Studio', icon: PenSquare, keywords: 'create meme editor photo notes timer music tools design' },
+      { to: '/assistant', label: 'Astral Guide', icon: Bot, keywords: 'ai chatbot assistant help plan ideas local private' },
       { to: '/hush-moto', label: 'Hush Moto', icon: Bike, keywords: 'motorcycle multiplayer host join server ride' },
       { to: '/casino', label: 'Casino', icon: Dices, key: 'k', keywords: 'slots blackjack roulette crash plinko keno wheel bet' },
       { to: '/rng', label: 'RNG Roll', icon: Sparkles, key: 'r', keywords: 'aura roll luck potion' },

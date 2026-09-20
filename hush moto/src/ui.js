@@ -42,6 +42,7 @@ export class UI {
       menu: $('menu'),
       menuMain: $('menu-main'),
       menuGarage: $('menu-garage'),
+      menuModes: $('menu-modes'),
       menuControls: $('menu-controls'),
       menuSettings: $('menu-settings'),
       garageList: $('garage-list'),
@@ -446,6 +447,7 @@ export class UI {
     $('btn-controls').onclick = () => this.showPanel('controls');
     $('btn-settings').onclick = () => this.showPanel('settings');
     $('btn-multiplayer').onclick = () => this.showPanel('multiplayer');
+    $('btn-modes').onclick = () => { this.buildModes(); this.showPanel('modes'); };
     $('game-menu').onclick = () => g.setPaused(!g.paused);
     $('btn-restart').onclick = () => { g.restart(); g.setPaused(false); };
     for (const b of document.querySelectorAll('.btn-back')) b.onclick = () => this.showPanel('main');
@@ -593,7 +595,7 @@ export class UI {
     for (const [key, el] of Object.entries({
       main: this.el.menuMain, garage: this.el.menuGarage,
       controls: this.el.menuControls, settings: this.el.menuSettings,
-      multiplayer: $('menu-multiplayer'), map:$('menu-map'), lab:$('menu-lab'),
+      multiplayer: $('menu-multiplayer'), map:$('menu-map'), modes:$('menu-modes'), lab:$('menu-lab'),
     })) {
       el?.classList.toggle('show', key === name);
     }
@@ -602,6 +604,20 @@ export class UI {
       this.syncBuild?.();
       this.showroom ||= new Showroom($('showroom-canvas'));
       this.showroom.select(this.game.bike);this.showroom.render(0);
+    }
+  }
+
+  buildModes() {
+    const list = $('mode-list'); if (!list || list.childElementCount) return;
+    const modes = this.game.modes?.constructor?.GAME_MODES || [];
+    // The module exports the catalog; use the game instance's static list when available.
+    const catalog = this.game.modes?.definitions || [];
+    const fallback = [
+      ['tag','Tag','Catch the moving beacon or a crew rider before the clock runs out.'],['checkpoint','Checkpoint Rush','Chain city gates quickly and keep the streak alive.'],['time-trial','Time Trial','Beat a three-minute route while the clock chases you.'],['stunt','Stunt Score Attack','Bank the biggest combo before the five-minute round ends.'],['fuel-run','Fuel Run','Reach both orange fuel stations before the tank runs dry.'],['cops','Cops & Riders','Escape a pursuit and finish without getting busted.'],['slalom','Slalom Sprint','Thread six gates with clean lines and no crashes.'],['delivery','Courier Dash','Ride a package across town before time expires.'],['night','Night Ride','A low-light free ride with the headlight and neon on.'],['practice','Corner Practice','Learn smooth throttle, countersteer and lean through a calm route.']
+    ];
+    for (const [id,name,description] of catalog.length ? catalog.map((m) => [m.id,m.name,m.description]) : fallback) {
+      const card=document.createElement('button'); card.className='mode-card'; card.innerHTML=`<strong>${name}</strong><span>${description}</span><small>START MODE ↗</small>`;
+      card.onclick=()=>{this.game.modes?.start(id);$('mode-status').textContent=`${name} active · ride to begin`;}; list.append(card);
     }
   }
 

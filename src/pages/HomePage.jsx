@@ -21,6 +21,7 @@ import {
 
 const TILES = [
   { to: '/studio', label: 'Studio · 50 tools', body: 'Create, plan and play together', icon: Sparkles },
+  { to: '/assistant', label: 'Astral Guide', body: 'Private AI-style help for your workspace', icon: Sparkles },
   { to: '/shorts', label: 'Shorts', body: 'Swipe through quick videos', icon: Clapperboard },
   { to: '/rng', label: 'RNG Roll', body: 'Roll for rare auras', icon: Sparkles },
   { to: '/members', label: 'Members', body: 'Find and follow people', icon: Users },

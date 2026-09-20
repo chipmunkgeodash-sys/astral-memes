@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {STUDIO_TOOLS,textTool,contrast,teams,bracket,dateDifference,convert,escapeXML,shuffle} from '../src/lib/studio.js';
+import {ASTRAL_FEATURES,assistantReply} from '../src/lib/feature-pack.js';
 test('Studio exposes exactly fifty distinct tools across five categories',()=>{assert.equal(STUDIO_TOOLS.length,50);assert.equal(new Set(STUDIO_TOOLS.map(t=>t.name)).size,50);assert.equal(new Set(STUDIO_TOOLS.map(t=>t.id)).size,50);assert.equal(new Set(STUDIO_TOOLS.map(t=>t.group)).size,5);});
 test('text cleanup preserves Unicode and treats find/replace as literal text',()=>{assert.equal(textTool(13,'$a.b $a.b',{find:'$a.b',replace:'yes'}),'yes yes');assert.equal(textTool(14,'a\na\n猫\n猫\n'),'a\n猫');assert.match(textTool(11,'Hello 世界 👋'),/^2 words/);assert.equal(textTool(12,'HELLO WORLD',{mode:'title'}),'Hello World');assert.equal(textTool(15,'item 10\nitem 2'),'item 2\nitem 10');});
 test('word counts handle prototype-like words and repeated capitalization',()=>{assert.equal(textTool(19,'constructor constructor ToString tostring'),'constructor: 2\ntostring: 2');});
@@ -9,3 +10,4 @@ test('team shuffle assigns every name once and balances team sizes',()=>{const n
 test('bracket seeds byes without dropping players and has a final',()=>{const rounds=bracket(['a','b','c','d','e']);assert.deepEqual(rounds.map(r=>r.length),[4,2,1]);assert.deepEqual(rounds[0].flat().filter(Boolean).sort(),['a','b','c','d','e']);});
 test('date calculations are calendar-based, including leap days and reverse spans',()=>{assert.equal(dateDifference('2024-02-28','2024-03-01'),2);assert.equal(dateDifference('2026-03-07','2026-03-09'),2);assert.equal(dateDifference('2026-01-02','2026-01-01'),-1);assert.equal(dateDifference('',''),null);});
 test('SVG text cannot introduce markup',()=>{assert.equal(escapeXML('<script>&"\''),'&lt;script&gt;&amp;&quot;&apos;');});
+test('Astral Guide ships twenty local features and useful intent replies',()=>{assert.equal(ASTRAL_FEATURES.length,20);assert.equal(new Set(ASTRAL_FEATURES.map(([name])=>name)).size,20);assert.match(assistantReply('give me a ride tip'),/countersteer/i);assert.match(assistantReply('/idea'),/Idea spark/i);assert.match(assistantReply('is this private?'),/browser/i);});

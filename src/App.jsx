@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 const StudioPage = lazy(() => import('./pages/StudioPage'));
+const AssistantPage = lazy(() => import('./pages/AssistantPage'));
 import { useRouter } from './lib/useRouter';
 import { Ban } from 'lucide-react';
 import { useSession } from './lib/session';
@@ -48,6 +49,7 @@ const ROUTES = {
   store: StorePage,
   games: GamesPage,
   studio: StudioPage,
+  assistant: AssistantPage,
   'hush-moto': HushMotoPage,
   messages: MessagesPage,
   profile: ProfilePage,
@@ -76,6 +78,7 @@ export default function App() {
 
   if (!user) {
     if (router.segments[0] === 'studio') return <Suspense fallback={<div className="state">Opening Studio…</div>}><main className="studio-public"><nav><a href="/">← Astral</a><a href="/hushmoto">Play Hush Moto ↗</a></nav><StudioPage router={router} /></main></Suspense>;
+    if (router.segments[0] === 'assistant') return <Suspense fallback={<div className="state">Opening Astral Guide…</div>}><main className="studio-public"><nav><a href="/">← Astral</a><a href="/studio">Open Studio ↗</a></nav><AssistantPage router={router} /></main></Suspense>;
     if (router.segments[0] === 'hush-moto') {
       return <main className="hush-public"><a className="hush-back" href="/">← Astral</a><HushMotoPage /></main>;
     }
