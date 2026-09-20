@@ -8,6 +8,6 @@ Astral Guide is a local assistant: chat, memory, mood, tasks, command replies, e
 
 ## Hush Moto (20+ in this wave and existing Ride Lab)
 
-New focused modes: Tag, Checkpoint Rush, Time Trial, Stunt Score Attack, Fuel Run, Cops & Riders, Slalom Sprint, Courier Dash, Night Ride, and Corner Practice. The existing game also includes multiplayer public-server discovery, host/join rooms, bike and rider customization, Chi/EBMX build tuning, gas stations, electric chargers, city map routing, saved locations, recovery points, trip records, deliveries, slalom, performance tests, skill challenges, five trick combos, police pursuits, traffic, day/night, photo mode, and local model replacement.
+New focused modes: Tag, Checkpoint Rush, Time Trial, Stunt Score Attack, Fuel Run, Cops & Riders, Slalom Sprint, Courier Dash, Night Ride, Corner Practice, Race Line, Ghost Practice, Traffic Weave, Jump Line, Slide Control, Gas Saver, Neon Tour, Photo Hunt, Crew Rally, and Endurance. The existing game also includes multiplayer public-server discovery, host/join rooms, bike and rider customization, Chi/EBMX build tuning, gas stations, electric chargers, city map routing, saved locations, recovery points, trip records, deliveries, slalom, performance tests, skill challenges, five trick combos, police pursuits, traffic, day/night, photo mode, and local model replacement.
 
 Cornering now uses a progressive high-speed steering limit, countersteer trail, speed-sensitive steering damping, tyre slip and friction-circle limits, and lean-based yaw response.

@@ -12,6 +12,16 @@ export const GAME_MODES = [
   { id: 'delivery', name: 'Courier Dash', description: 'Ride a package across town and return before time expires.', color: 0xffa86e },
   { id: 'night', name: 'Night Ride', description: 'A low-light free ride with the headlight and neon on.', color: 0x9c8cff },
   { id: 'practice', name: 'Corner Practice', description: 'Learn smooth throttle, countersteer and lean through a calm route.', color: 0x8ce9d6 },
+  { id: 'race-line', name: 'Race Line', description: 'Take the cleanest line through five city targets.', color: 0xffe15a },
+  { id: 'ghost', name: 'Ghost Practice', description: 'Set a personal pace and chase your best local run.', color: 0xc2d5ff },
+  { id: 'traffic-weave', name: 'Traffic Weave', description: 'Thread moving traffic without touching a car.', color: 0xf07878 },
+  { id: 'jump-line', name: 'Jump Line', description: 'Link three clean landings and keep your speed.', color: 0xd19bff },
+  { id: 'drift', name: 'Slide Control', description: 'Hold a controlled rear slide without a crash.', color: 0xffa34f },
+  { id: 'gas-saver', name: 'Gas Saver', description: 'Reach the next station using the least fuel possible.', color: 0xff8b57 },
+  { id: 'neon-tour', name: 'Neon Tour', description: 'Visit three landmarks with your night setup glowing.', color: 0x77e5ff },
+  { id: 'photo-hunt', name: 'Photo Hunt', description: 'Ride to three scenic locations for a photo route.', color: 0xe9b7ff },
+  { id: 'crew-rally', name: 'Crew Rally', description: 'Follow the shared target route with your multiplayer crew.', color: 0x79f2a6 },
+  { id: 'endurance', name: 'Endurance', description: 'Keep a clean ride going for ten minutes.', color: 0x91a4b8 },
 ];
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
